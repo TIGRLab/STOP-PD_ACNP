@@ -6,4 +6,8 @@ STOPPD_age&sex.Rmd
 STOPPD_freesurfer.Rmd
 STOPPD_freesurfer_long.Rmd
 STOPPD_scripts.Rproj
-
+data/
+generated_csvs/
+STOPPD_data.zip
+notebooks/.pdf
+notebooks/*.log
