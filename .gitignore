@@ -9,5 +9,6 @@ STOPPD_scripts.Rproj
 data/
 generated_csvs/
 STOPPD_data.zip
-notebooks/.pdf
+notebooks/*.pdf
 notebooks/*.log
+notebooks/*.html
