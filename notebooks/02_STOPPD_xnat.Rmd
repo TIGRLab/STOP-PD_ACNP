@@ -20,10 +20,10 @@ library('tidyr')
 ```{r import_data}
 
 #import spreadsheets (exported from XNAT)
-xnat_camh <- read.csv('../data/xnat_cmh_2018-01-25.csv')
-xnat_nki <- read.csv('../data/xnat_nki_2018-01-25.csv')
-xnat_pitt <- read.csv('../data/xnat_pmc_2018-01-25.csv')
-xnat_umass <- read.csv('../data/xnat_umas_2018-01-25.csv')
+xnat_camh <- read.csv('../data/xnat_records/xnat_cmh_2018-01-25.csv')
+xnat_nki <- read.csv('../data/xnat_records/xnat_nki_2018-01-25.csv')
+xnat_pitt <- read.csv('../data/xnat_records/xnat_pmc_2018-01-25.csv')
+xnat_umass <- read.csv('../data/xnat_records/xnat_umas_2018-01-25.csv')
 
 #combine XNAT spreadsheets, take only ID and date columns
 xnat <- Reduce(function(x, y) merge(x, y, all=TRUE), list(xnat_camh, xnat_nki, xnat_pitt, xnat_umass))

@@ -51,6 +51,7 @@ df <- subset(df, select= c(STUDYID, randomization, sex, age, second_timepoint, o
   CT <- CT[!grepl("_03", CT$SubjID),] #remove '_03' scans
   CT$timepoint <- str_sub(CT$SubjID, -2, -1) #make timepoint characters own column 
   CT$SubjID <- str_sub(CT$SubjID, 1, -4) #remove last 3 characters
+  CT$site <- str_sub(CT$SubjID, 1, -4)
 
 #move CT from long to wide format
   CT_wide <- reshape(CT, idvar = "SubjID", timevar = "timepoint", direction = "wide")
