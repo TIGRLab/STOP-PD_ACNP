@@ -6,11 +6,13 @@ last run: Sys.Date()
 output: pdf_document
 ---
 
-#This script combines information in XNAT/file system (which have already been established to be identical in script 02_STOPPD_xnat) and study logs, and randomization (recently unblinded), into a single, master spreadsheet.
+### This script combines information in XNAT/file system (which have already been established to be identical in script 02_STOPPD_xnat) and study logs, and randomization (recently unblinded), into a single, master spreadsheet.
 
-#Purpose: the output csv (STOPPD_masterDF_2018-09-06.csv) is meant to serve as a master reference sheet for all participants that were randomized (irrespective of scan completion).
+### Purpose: the output csv (STOPPD_participantList_2018-11-05.csv) is meant to serve as a master reference sheet for all participants that were randomized (irrespective of scan completion).
 
-#Note: this script does not remove individuals who failed preprocessing, QC, or should be removed from the dataset for any other reason.
+### This script now also adds a column relating to whether or not the subject is ok for MR analysis (i.e. not excluded for later identified neurological condition)
+
+### Note: this script does not remove individuals who failed preprocessing, QC, or should be removed from the dataset for any other reason.
 
 ```{r setup}
 library('stringi')
@@ -235,36 +237,40 @@ df <- df[c(
 
 #remove '_log' component of all variable names, for clarity
 names(df) = gsub(pattern = "_log", replacement = "", x = names(df))
+
 ```
-```{r}
-#write csv
-write.csv(df, '../generated_csvs/STOPPD_masterDF_2018-09-06.csv', na = "", row.names=FALSE)
 
-#cleanup
-rm(df, log, randomization, xnat, i, X, Y)
+## Exclusions from MR analysis and reasons
 
+**subject 320032 (PMC)**: incidental findings more atrophy, should excluded
+**subject 410012 (CMH)**: another incidental finding, case may have effected longitudinal brain morphomentry
+
+```{r MR-exclusions}
+library(dplyr)
+df <- df %>% mutate(MR_exclusion = if_else(STUDYID %in% c("320032", "410012"), "Yes", "No"))
 ```
 
 ```{r participantList_df}
 
 #make a smaller df of minimally necessary information from participants that completed 2 scans, as requested by Nick August 2018
-
-df <- read.csv('../generated_csvs/STOPPD_masterDF_2018-09-06.csv')
+write.csv(df, '../generated_csvs/STOPPD_masterDF_2018-11-05.csv', row.names=FALSE)
 
 #remove participants that don't have 'Yes' in 'first_complete'
-df <-df[(df$first_complete == "Yes"),] #nrow = 88, which is correct
+df <- df %>% filter(first_complete == "Yes") #nrow = 88, which is correct
 
 #remove participants that don't have 'Yes' in 'second_complete'
-df <-df[(df$second_complete == "Yes"),] #nrow = 74, which is correct
+df <-df %>% filter(second_complete == "Yes") #nrow = 74, which is correct
 
 #remove redundant columns
-df <- df[, c('STUDYID', 'age', 'sex', 'randomization', 'first_timepoint', 'second_timepoint', 'third_timepoint')]
+df <- df %>% select(STUDYID, age, sex, randomization, MR_exclusion, first_timepoint, second_timepoint, third_timepoint)
 
-#rename column
-names(df)[names(df) == 'third_complete'] <- 'offlabel?'
-
-#write.csv
-write.csv(df, '../generated_csvs/STOPPD_participantList_2018-08-08.csv', row.names=FALSE)
-
+df <- df %>% dplyr::rename("offlabel_timepoint" = third_timepoint)
 ```
 
+
+
+```{r}
+#write.csv
+write.csv(df, '../generated_csvs/STOPPD_participantList_2018-11-05.csv', row.names=FALSE)
+
+```

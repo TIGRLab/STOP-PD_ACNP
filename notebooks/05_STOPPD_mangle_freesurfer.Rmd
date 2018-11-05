@@ -2,10 +2,10 @@
 title: "STOPPD_error"
 author: "Navona"
 output:
-  pdf_document: default
-  html_notebook: default
   html_document:
     df_print: paged
+  html_notebook: default
+  pdf_document: default
 last run: Sys.Date()
 written: February 8, 2018
 ---
@@ -15,10 +15,9 @@ This script pulls together completion information alongside cortical thickness (
 ```{r setup}
 library(tidyverse)
 
-df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-09-06.csv",
-na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
+df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-11-05.csv",na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
 
-CT <- read_csv('../data/fs-enigma-long_201809/CorticalMeasuresENIGMA_ThickAvg.csv') #bring in CT data, from pipelines
+CT <- read_csv('../data/fs-enigma-long_201811/CorticalMeasuresENIGMA_ThickAvg.csv') #bring in CT data, from pipelines
 
 ```
 
@@ -30,7 +29,8 @@ CT <- read_csv('../data/fs-enigma-long_201809/CorticalMeasuresENIGMA_ThickAvg.cs
 # then select the cols for analysis
 df <- df %>%
   filter(first_complete == "Yes", 
-         second_complete == "Yes") %>%
+         second_complete == "Yes",
+         MR_exclusion == "No") %>%
   mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
          dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
          STUDYID = parse_character(STUDYID)) %>%
@@ -65,7 +65,7 @@ CT_wide <- CT_long %>%
 ana_df <- inner_join(df, CT_wide, by='STUDYID')
 
 # write.csv
-write_csv(ana_df, '../generated_csvs/STOPPD_participantsCT_20180914.csv')
+write_csv(ana_df, '../generated_csvs/STOPPD_participantsCT_20181105.csv')
 ```
 
 ## report any mising values from clinical trial sample
@@ -109,6 +109,6 @@ CT_wide_controls <- CT_long1 %>%
   spread(newcolnames, thickness)
 
 #write.csv
-  write.csv(CT_wide_controls, '../generated_csvs/STOPPD_errorControls_2018-09-14.csv', row.names = FALSE)
+  write.csv(CT_wide_controls, '../generated_csvs/STOPPD_errorControls_2018-11-05.csv', row.names = FALSE)
 ```
 
