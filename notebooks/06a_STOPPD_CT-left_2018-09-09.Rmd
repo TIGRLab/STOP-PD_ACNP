@@ -65,10 +65,11 @@ df$RandomArm <- factor(df$randomization,
 **subject 210030 (MAS)**: serious outlier.. it appears that this participants baseline is acutally a mislabled repeat of the subject 210022's baseline data. Calculating the difference in cortical thinkness between two different people was a relatively large value..
 
 **subject 320032 (PMC)**: incidental findings more atrophy, should excluded
+**subject 410012 (CMH)**: another incidental finding, case may have effected longitudinal brain morphomentry
 
 ```{r}
-RCT_CT <- filter(RCT_CT, !(STUDYID %in% c("210030", "320032")))
-RCTRelapse_CT <- filter(RCTRelapse_CT, !(STUDYID %in% c("210030", "320032")))
+RCT_CT <- filter(RCT_CT, !(STUDYID %in% c("210030", "320032", "410012")))
+RCTRelapse_CT <- filter(RCTRelapse_CT, !(STUDYID %in% c("210030", "320032", "410012")))
 ```
 
 
