@@ -18,9 +18,9 @@ library('dplyr')
 library('tidyr')
 library('stringr')
 
-df <- read.csv('../generated_csvs/STOPPD_masterDF_2018-09-06.csv', na.strings = "", stringsAsFactors = FALSE) #spreadsheet created by 03_STOPPD_masterDF.rmd
+df <- read.csv('../generated_csvs/STOPPD_masterDF_2018-11-05.csv', na.strings = "", stringsAsFactors = FALSE) #spreadsheet created by 03_STOPPD_masterDF.rmd
 
-CT <- read.csv('../data/CT_2018-02-08.csv', stringsAsFactors = FALSE) #bring in CT data, from pipelines
+CT <- read.csv('../data/fs-enigma-long_201809/CorticalMeasuresENIGMA_ThickAvg.csv', stringsAsFactors = FALSE) #bring in CT data, from pipelines
 
 ```
 
@@ -64,7 +64,7 @@ df <- subset(df, select= c(STUDYID, randomization, sex, age, second_timepoint, o
   colnames(df)[colnames(df)=="offlabel"] <- "offLabel" 
 
 #write.csv
-  write.csv(df, '../generated_csvs/STOPPD_errorCases_2018-02-09.csv', row.names = FALSE)
+  write.csv(df, '../generated_csvs/STOPPD_errorCases_2018-11-05.csv', row.names = FALSE)
 
 ```
 
@@ -92,7 +92,7 @@ df <- subset(df, select= c(STUDYID, randomization, sex, age, second_timepoint, o
   colnames(controls)[colnames(controls)=="SubjID"] <- "STUDYID" 
 
 #write.csv
-  write.csv(controls, '../generated_csvs/STOPPD_errorControls_2018-02-09.csv', row.names = FALSE)
+  write.csv(controls, '../generated_csvs/STOPPD_errorControls_2018-11-05.csv', row.names = FALSE)
 
 #cleanup
   rm(CT_wide, CT, df, controls, controls_R, control_list)

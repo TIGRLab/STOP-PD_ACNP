@@ -1,0 +1,19 @@
+book_filename: "STOPPD-RCT"
+language:
+  ui:
+    chapter_name: "Chapter "
+delete_merged_file: false
+new_session: yes
+rmd_files: [
+  "index.Rmd",
+  "01_STOPPD_terminal.Rmd",
+  "03_STOPPD_masterDF.Rmd",
+  "04_STOPPD_randomization.Rmd",
+  "05_STOPPD_mangle_freesurfer.Rmd",
+  "06_STOPPD_CorticalThickness_byhemi.Rmd",
+  "07_STOPPD_CorticalSurfaceArea_byhemi.Rmd",
+  "08_STOPPD_FA-meanFAskel.Rmd",
+  "09_STOPPD_MD-meanFAskel.Rmd",
+  "10_STOPPD_freesurfer_subcortical.Rmd",
+]
+output_dir: "rendered"

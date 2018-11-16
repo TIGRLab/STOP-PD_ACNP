@@ -1,0 +1,321 @@
+# Freesurfer Derived Subcortical Volumes
+
+```{r 10-setup}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+
+df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-11-05.csv",na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
+
+FS <- read_csv('../data/fs-enigma-long_201811/LandRvolumes.csv') #bring in subcortical data, from pipelines
+
+```
+
+```{r datacleaning_participants}
+
+# remove participants that did not complete first and second scan (n=74)
+# then add offlabel and dateDiff (in days columns)
+# + a scan is by definition offlabel if it is the third scan
+# then select the cols for analysis
+df <- df %>%
+  filter(first_complete == "Yes", 
+         second_complete == "Yes",
+         MR_exclusion == "No") %>%
+  mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
+         dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
+         STUDYID = parse_character(STUDYID),
+         age = parse_number(age)) %>%
+  rename(category = "second_timepoint") %>%
+  select(STUDYID, randomization, sex, age, category, offLabel, dateDiff)
+
+```
+
+## cleaning the CT data
+
+
+```{r datacleaning_CT}
+# separating the subject id and anything afterwards to identify the longtudinal pipeline participants
+# separating the subject id into site, "STUDYID" and timepoint columns
+# filtering (two steps) to only include the longitudinal pipeline data
+FS_long <- FS %>%
+  separate(SubjID, into = c("subid", "longitudinal_pipe"), sep = '\\.', extra = "drop", fill = "right") %>%
+  separate(subid, into = c("study", "site", "STUDYID", "timepoint"), fill = "right") %>%
+  filter(longitudinal_pipe == "long") %>%
+  filter(timepoint != "00", timepoint != "03", timepoint != "")
+
+# adding columns that combine L and R
+FS_long_plus <- FS_long %>%
+  mutate(Thalamus = Lthal + Rthal,
+         Hippocampus = Lhippo + Rhippo,
+         Striatum = Lcaud + Rcaud + Lput + Rput)
+
+
+# move CT from long to wide format
+FS_wide <- FS_long_plus %>%
+  gather(region, volume, -study, -site, -timepoint, -STUDYID, -longitudinal_pipe) %>%
+  spread(timepoint, volume) %>%
+  mutate(change = `02` - `01`) %>%
+  gather(timepoint, volume, `01`, `02`, change) %>%
+  unite(newcolnames, region, timepoint) %>%
+  spread(newcolnames, volume)
+```
+
+
+```{r merge_with_clinical_and_check}
+# merge CT values with df
+ana_df <- inner_join(df, FS_wide, by='STUDYID') %>%
+    mutate(STUDYID = as.character(STUDYID),
+         dateDiff = as.numeric(dateDiff),
+         RandomArm = factor(randomization, 
+                       levels = c("O", "P"),
+                       labels = c("Olanzapine", "Placebo"))) 
+
+# write.csv
+write_csv(ana_df, '../generated_csvs/STOPPD_participants_LandRVolumes_20181116.csv')
+```
+
+## report any mising values from clinical trial sample
+
+```{r}
+anti_join(df, FS_wide, by='STUDYID') %>%
+  summarise(`Number of participants missing` = n()) %>%
+  knitr::kable()
+```
+```{r}
+ana_df %>%
+  filter(is.na(ICV_01)) %>%
+  summarise(`Number of participants missing timepoint 01` = n()) %>%
+  knitr::kable()
+```
+
+```{r}
+ana_df %>%
+  filter(is.na(ICV_02)) %>%
+  summarise(`Number of participants missing timepoint 02` = n()) %>%
+  knitr::kable()
+```
+
+## creating an control error term calculating data frame
+
+```{r 10-datacleaning_controls}
+
+## identify the repeat control in a column and mangle the STUDYID to match in a new column
+FS_long1 <- FS_long_plus %>%
+  mutate(repeat_run = if_else(str_sub(STUDYID,1,1)=="R", "02", "01"),
+         STUDYID = str_replace(STUDYID, 'R',"")) 
+
+## extra the repeat study ids as a character vector
+repeat_ids <- filter(FS_long1, repeat_run == "02")$STUDYID
+
+## filter for only the subjects who are in the repeats list then switch to wide format
+FS_wide_controls <- FS_long1 %>%
+  filter(STUDYID %in% repeat_ids) %>% 
+  gather(region, volume, -study, -site, -timepoint, -STUDYID, -longitudinal_pipe, -repeat_run) %>%
+  unite(newcolnames, region, repeat_run) %>%
+  spread(newcolnames, volume)
+
+#write.csv
+  write.csv(FS_wide_controls, '../generated_csvs/STOPPD_errorControls_LandRVolumes_2018-11-05.csv', row.names = FALSE)
+  
+rm(FS_long1, repeat_ids)
+```
+
+## run RCT analysis (because it's simpler across volumes)
+
+```{r}
+# make sure that STUDYID is an character not a number
+# make sure that dateDiff is a number, not an interger
+# label the randomization variable  
+RCT_SubCort <- ana_df %>%
+
+  filter(category == "RCT")
+
+```
+
+
+```{r 10-boxplot-ROIs}
+#boxplot of difference in thickness (y axis) by randomization group (x axis)
+RCT_SubCort  %>%
+  gather(region, volume_change, Thalamus_change, Hippocampus_change, Striatum_change) %>%
+  mutate(Region = str_replace(region, '_change','')) %>%
+ggplot(aes(x= RandomArm, y = volume_change)) + 
+     geom_boxplot(outlier.shape = NA) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center') +
+     geom_hline(yintercept = 0) +
+     ggtitle("Freesurfer Subcortical Volume Changes") +
+     xlab(NULL) +
+     ylab("Change in Volume") +
+     facet_wrap(~Region) +
+     theme_bw()
+```
+### Running RCT Linear Models
+
+#### Thalamus
+
+```{r RCT_Thalamus_stats}
+#run linear model without covariates
+  fit_rct <- lm(Thalamus_change ~ RandomArm, data= RCT_SubCort)
+  summary(fit_rct)
+
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Thalamus_change ~ RandomArm + sex + age, data= RCT_SubCort)
+  summary(fit_rct)
+  
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Thalamus_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  summary(fit_rct)
+```
+#### Striatum
+
+```{r RCT_Striatum_stats}
+#run linear model without covariates
+  fit_rct <- lm(Striatum_change ~ RandomArm, data= RCT_SubCort)
+  print(fit_rct)
+  summary(fit_rct)
+
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Striatum_change ~ RandomArm + sex + age, data= RCT_SubCort)
+  print(fit_rct)
+  summary(fit_rct)
+  
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Striatum_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  print(fit_rct)
+  summary(fit_rct)
+```
+#### Hippocampus
+
+```{r RCT_Hippocampus_stats}
+#run linear model without covariates
+  fit_rct <- lm(Hippocampus_change ~ RandomArm, data= RCT_SubCort)
+  summary(fit_rct)
+
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Hippocampus_change ~ RandomArm + sex + age, data= RCT_SubCort)
+  summary(fit_rct)
+  
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Hippocampus_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  summary(fit_rct)
+```
+
+----
+
+## RCT & Relapse (with time as factor)
+
+### Thalamus
+
+
+```{r the-ns-Thalamus}
+#restructure data for RCT & Relapse participants (N=72)
+  RCTRelapse_Thalamus <- ana_df %>%
+    gather(oldcolname, volume, Thalamus_01, Thalamus_02) %>%
+    mutate(model_days = if_else(oldcolname == "Thalamus_01", 1, dateDiff))
+
+RCTRelapse_Thalamus %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+
+```
+
+```{r RCTRelapse_Thalamus_plot, warning = FALSE}
+
+#plot all data, including outlier (participant 210030)
+  RCTRelapse_Thalamus %>%
+   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
+   geom_point() + 
+   geom_line(aes(group=STUDYID), alpha = 0.5) + 
+   geom_smooth(method="lm", formula=y~poly(x,1)) +
+   ggtitle("Volume of Thalamus over time") +
+   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
+   theme_minimal()
+```
+
+```{r RCTRelapse_Thalamus_stats, warning = FALSE}  
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Thalamus)
+  print(fit_all)
+  summary(fit_all)
+
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Thalamus)
+  print(fit_all)
+  summary(fit_all)
+
+```
+
+### Striatum
+
+
+```{r the-ns-Striatum}
+#restructure data for RCT & Relapse participants (N=72)
+  RCTRelapse_Striatum <- ana_df %>%
+    gather(oldcolname, volume, Striatum_01, Striatum_02) %>%
+    mutate(model_days = if_else(oldcolname == "Striatum_01", 1, dateDiff))
+
+RCTRelapse_Striatum %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+
+```
+
+```{r RCTRelapse_Striatum_plot, warning = FALSE}
+
+#plot all data, including outlier (participant 210030)
+  RCTRelapse_Striatum %>%
+   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
+   geom_point() + 
+   geom_line(aes(group=STUDYID), alpha = 0.5) + 
+   geom_smooth(method="lm", formula=y~poly(x,1)) +
+   ggtitle("Volume of Striatum over time") +
+   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
+   theme_minimal()
+```
+
+```{r RCTRelapse_Striatum_stats, warning = FALSE}  
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Striatum)
+  print(fit_all)
+  summary(fit_all)
+
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Striatum)
+  print(fit_all)
+  summary(fit_all)
+
+```
+
+### Hippocampus
+
+
+```{r the-ns-Hippocampus}
+#restructure data for RCT & Relapse participants (N=72)
+  RCTRelapse_Hippocampus <- ana_df %>%
+    gather(oldcolname, volume, Hippocampus_01, Hippocampus_02) %>%
+    mutate(model_days = if_else(oldcolname == "Hippocampus_01", 1, dateDiff))
+
+RCTRelapse_Hippocampus %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+
+```
+
+```{r RCTRelapse_Hippocampus_plot, warning = FALSE}
+
+#plot all data, including outlier (participant 210030)
+  RCTRelapse_Hippocampus %>%
+   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
+   geom_point() + 
+   geom_line(aes(group=STUDYID), alpha = 0.5) + 
+   geom_smooth(method="lm", formula=y~poly(x,1)) +
+   ggtitle("Volume of Hippocampus over time") +
+   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
+   theme_minimal()
+```
+
+```{r RCTRelapse_Hippocampus_stats, warning = FALSE}  
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Hippocampus)
+  print(fit_all)
+  summary(fit_all)
+
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Hippocampus)
+  print(fit_all)
+  summary(fit_all)
+
+```
