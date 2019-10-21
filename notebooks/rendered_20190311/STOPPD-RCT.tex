@@ -125,7 +125,7 @@
   \postauthor{\par}
       \predate{\centering\large\emph}
   \postdate{\par}
-    \date{March 26, 2019}
+    \date{March 19, 2019}
 
 \usepackage{booktabs}
 \usepackage{amsthm}
@@ -1206,7 +1206,7 @@ with Jason Lerch.
 \NormalTok{         MR_exclusion }\OperatorTok{==}\StringTok{ "No"}\NormalTok{) }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{offLabel  =} \KeywordTok{if_else}\NormalTok{(third_complete }\OperatorTok{==}\StringTok{ "Yes"}\NormalTok{, }\StringTok{"Yes"}\NormalTok{, }\StringTok{''}\NormalTok{),}
          \DataTypeTok{dateDiff =} \KeywordTok{round}\NormalTok{(}\KeywordTok{difftime}\NormalTok{(second_date, first_date, }\DataTypeTok{units =} \StringTok{"days"}\NormalTok{), }\DecValTok{0}\NormalTok{),}
-         \DataTypeTok{STUDYID =} \KeywordTok{as.character}\NormalTok{(STUDYID)) }\OperatorTok{%>%}
+         \DataTypeTok{STUDYID =} \KeywordTok{parse_character}\NormalTok{(STUDYID)) }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{rename}\NormalTok{(}\DataTypeTok{category =} \StringTok{"second_timepoint"}\NormalTok{) }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{select}\NormalTok{(STUDYID, randomization, sex, age, category, offLabel, dateDiff)}
 \end{Highlighting}
@@ -1357,7 +1357,7 @@ Thickness calculated with Freesurfer
                        \DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"O"}\NormalTok{, }\StringTok{"P"}\NormalTok{),}
                        \DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{"Olanzapine"}\NormalTok{, }\StringTok{"Placebo"}\NormalTok{))}
 
-\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"#e6ab02"}\NormalTok{, }\StringTok{"#386cb0"}\NormalTok{)}
+\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\StringTok{"#FFC200"}\NormalTok{, }\StringTok{"#007aa3"}\NormalTok{)}
 
 \CommentTok{# set category levels so that RCT and Relapse are at the top}
 \NormalTok{df <-}\StringTok{ }\NormalTok{df }\OperatorTok{%>%}
@@ -1484,7 +1484,7 @@ P & 14\\
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(LThickness_change }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site), }\DataTypeTok{data=}\NormalTok{ RCT_CT)}
-\KeywordTok{summary}\NormalTok{(fit_all) }
+\KeywordTok{summary}\NormalTok{(fit_all)  }
 \end{Highlighting}
 \end{Shaded}
 
@@ -1520,47 +1520,6 @@ P & 14\\
 ## RndmArmPlcb -0.007              
 ## sexM        -0.066  0.076       
 ## age         -0.881 -0.194 -0.178
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(LThickness_change }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCT_CT, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-\KeywordTok{summary}\NormalTok{(fit_all) }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: LThickness_change ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_CT, age > 50)
-## 
-## REML criterion at convergence: -79.6
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -1.40665 -0.49771 -0.08412  0.38898  2.38786 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  site     (Intercept) 0.0002065 0.01437 
-##  Residual             0.0002544 0.01595 
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                    Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)      -0.0109777  0.0320852 17.7740149  -0.342   0.7363    
-## RandomArmPlacebo  0.0392553  0.0072047 15.4911794   5.449    6e-05 ***
-## sexM              0.0152211  0.0070528 15.6737362   2.158   0.0468 *  
-## age              -0.0004065  0.0004600 16.9092736  -0.884   0.3893    
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.304              
-## sexM        -0.167  0.176       
-## age         -0.955  0.202  0.045
 \end{verbatim}
 
 \begin{Shaded}
@@ -1604,47 +1563,6 @@ P & 14\\
 ## age         -0.915 -0.184 -0.196
 \end{verbatim}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(RThickness_change }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCT_CT, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-\KeywordTok{summary}\NormalTok{(fit_all)  }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: RThickness_change ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_CT, age > 50)
-## 
-## REML criterion at convergence: -74.4
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -1.1571 -0.7265 -0.2267  0.7086  1.5437 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  site     (Intercept) 9.295e-05 0.009641
-##  Residual             3.875e-04 0.019686
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                    Estimate Std. Error         df t value Pr(>|t|)   
-## (Intercept)       0.0176426  0.0376575 17.9240469   0.469  0.64507   
-## RandomArmPlacebo  0.0303258  0.0088747 15.4469971   3.417  0.00368 **
-## sexM             -0.0073636  0.0086525 15.8301086  -0.851  0.40744   
-## age              -0.0005918  0.0005480 17.7446154  -1.080  0.29471   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.326              
-## sexM        -0.178  0.179       
-## age         -0.971  0.214  0.048
-\end{verbatim}
-
 \subsubsection{looking at the same thing for Right
 CT}\label{looking-at-the-same-thing-for-right-ct}
 
@@ -1663,55 +1581,11 @@ CT}\label{looking-at-the-same-thing-for-right-ct}
 \StringTok{     }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\StringTok{ }\NormalTok{ThickChange) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }
+\StringTok{     }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/RCT_CT_facet_boxplot_fig2A-1.pdf}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{#boxplot of difference in thickness (y axis) by randoMR_exclusion == "No"mization group (x axis)}
-\NormalTok{RCT_CT }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{gather}\NormalTok{(TCT, mm, LThickness_change, RThickness_change) }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{ThickChange =} \KeywordTok{factor}\NormalTok{(TCT, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"LThickness_change"}\NormalTok{, }\StringTok{"RThickness_change"}\NormalTok{),}
-                              \DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{"Left Hemisphere"}\NormalTok{, }\StringTok{"Right Hemisphere"}\NormalTok{))) }\OperatorTok{%>%}
-\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{ RandomArm, }\DataTypeTok{y =}\NormalTok{ mm, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
-\StringTok{     }\KeywordTok{geom_boxplot}\NormalTok{(}\DataTypeTok{outlier.shape =} \OtherTok{NA}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{0.0001}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{     }\KeywordTok{geom_dotplot}\NormalTok{(}\DataTypeTok{binaxis =} \StringTok{'y'}\NormalTok{, }\DataTypeTok{stackdir =} \StringTok{'center'}\NormalTok{, }\DataTypeTok{binwidth =} \FloatTok{0.005}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{geom_hline}\NormalTok{(}\DataTypeTok{yintercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Change in Cortical Thickness (mm)"}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\StringTok{ }\NormalTok{ThickChange) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }
-\end{Highlighting}
-\end{Shaded}
-
-\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/RCT_CT_facet_boxplot_fig2Aa-1.pdf}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{RCT_CT }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{gather}\NormalTok{(TCT, mm, LThickness_change, RThickness_change) }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{ThickChange =} \KeywordTok{factor}\NormalTok{(TCT, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"LThickness_change"}\NormalTok{, }\StringTok{"RThickness_change"}\NormalTok{),}
-                              \DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{"Left Hemisphere"}\NormalTok{, }\StringTok{"Right Hemisphere"}\NormalTok{))) }\OperatorTok{%>%}
-\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{ RandomArm, }\DataTypeTok{y =}\NormalTok{ mm, }\DataTypeTok{fill =} \KeywordTok{factor}\NormalTok{(age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))) }\OperatorTok{+}\StringTok{ }
-\StringTok{     }\KeywordTok{geom_boxplot}\NormalTok{(}\DataTypeTok{outlier.shape =} \OtherTok{NA}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{0.0001}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{     }\KeywordTok{geom_dotplot}\NormalTok{(}\DataTypeTok{binaxis =} \StringTok{'y'}\NormalTok{, }\DataTypeTok{stackdir =} \StringTok{'center'}\NormalTok{, }\DataTypeTok{binwidth =} \FloatTok{0.005}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{geom_hline}\NormalTok{(}\DataTypeTok{yintercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Change in Cortical Thickness (mm)"}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\StringTok{ }\NormalTok{ThickChange) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }
-\end{Highlighting}
-\end{Shaded}
-
-\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-5-1.pdf}
 
 \subsection{RCT \& Relapse (with time as
 factor)}\label{rct-relapse-with-time-as-factor}
@@ -1772,14 +1646,13 @@ Placebo & NA & 29\\
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{thickness, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Cortical Thickness (mm)"}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_color_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\FloatTok{2.1}\NormalTok{,}\FloatTok{2.65}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{hemi)}
 \end{Highlighting}
 \end{Shaded}
@@ -1843,60 +1716,6 @@ Placebo & NA & 29\\
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{  fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCTRelapse_LCT, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-  \KeywordTok{summary}\NormalTok{(fit_all)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + age + sex + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_LCT, age > 50)
-## 
-## REML criterion at convergence: -224.2
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.89115 -0.28624 -0.03731  0.31448  2.80017 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0059128 0.07689 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0004928 0.02220 
-## Number of obs: 90, groups:  STUDYID, 45; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.608e+00  9.673e-02  4.098e+01  26.964
-## RandomArmPlacebo            -1.602e-02  2.379e-02  4.332e+01  -0.673
-## model_days                  -8.771e-05  3.280e-05  4.330e+01  -2.674
-## age                         -3.360e-03  1.426e-03  4.092e+01  -2.357
-## sexM                        -2.640e-02  2.347e-02  4.090e+01  -1.125
-## RandomArmPlacebo:model_days  1.446e-04  5.091e-05  4.381e+01   2.840
-##                             Pr(>|t|)    
-## (Intercept)                  < 2e-16 ***
-## RandomArmPlacebo             0.50429    
-## model_days                   0.01053 *  
-## age                          0.02330 *  
-## sexM                         0.26713    
-## RandomArmPlacebo:model_days  0.00682 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy age    sexM  
-## RndmArmPlcb -0.172                            
-## model_days  -0.029  0.133                     
-## age         -0.977  0.045 -0.003              
-## sexM        -0.187  0.022 -0.013  0.068       
-## RndmArmPl:_  0.001 -0.168 -0.644  0.018  0.016
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \CommentTok{#run mixed linear model, with covariates}
 \NormalTok{  fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_LCT_sensitivety)}
   \KeywordTok{summary}\NormalTok{(fit_all)}
@@ -1950,120 +1769,6 @@ Placebo & NA & 29\\
 ## RndmArmPl:_  0.051 -0.184 -0.608 -0.008  0.009
 \end{verbatim}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{  fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\KeywordTok{poly}\NormalTok{(model_days,}\DecValTok{2}\NormalTok{) }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_LCT_sensitivety)}
-  \KeywordTok{summary}\NormalTok{(fit_all)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * poly(model_days, 2) + age + sex + (1 |  
-##     site) + (1 | STUDYID)
-##    Data: RCTRelapse_LCT_sensitivety
-## 
-## REML criterion at convergence: -391.5
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.53615 -0.40640 -0.00153  0.45687  2.44001 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0052379 0.07237 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0004715 0.02171 
-## Number of obs: 134, groups:  STUDYID, 67; site, 4
-## 
-## Fixed effects:
-##                                         Estimate Std. Error         df
-## (Intercept)                            2.648e+00  3.479e-02  6.320e+01
-## RandomArmPlacebo                       1.463e-02  1.814e-02  6.315e+01
-## poly(model_days, 2)1                  -1.125e-01  3.055e-02  6.406e+01
-## poly(model_days, 2)2                  -8.140e-02  3.978e-02  6.759e+01
-## age                                   -4.422e-03  5.976e-04  6.305e+01
-## sexM                                  -5.569e-05  1.833e-02  6.277e+01
-## RandomArmPlacebo:poly(model_days, 2)1  2.086e-01  5.181e-02  6.556e+01
-## RandomArmPlacebo:poly(model_days, 2)2  1.769e-01  5.713e-02  6.723e+01
-##                                       t value Pr(>|t|)    
-## (Intercept)                            76.112  < 2e-16 ***
-## RandomArmPlacebo                        0.807 0.422844    
-## poly(model_days, 2)1                   -3.683 0.000475 ***
-## poly(model_days, 2)2                   -2.046 0.044655 *  
-## age                                    -7.399    4e-10 ***
-## sexM                                   -0.003 0.997585    
-## RandomArmPlacebo:poly(model_days, 2)1   4.025 0.000150 ***
-## RandomArmPlacebo:poly(model_days, 2)2   3.097 0.002854 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 age    sexM   RAP:(_,2)1
-## RndmArmPlcb -0.205                                                
-## ply(md_,2)1 -0.031  0.026                                         
-## ply(md_,2)2 -0.057  0.024  0.186                                  
-## age         -0.902 -0.053  0.019   0.048                          
-## sexM        -0.115 -0.006 -0.004  -0.008  -0.127                  
-## RnAP:(_,2)1  0.020  0.018 -0.590  -0.110  -0.015  0.011           
-## RnAP:(_,2)2  0.044  0.009 -0.130  -0.697  -0.039  0.010  0.278
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{    fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCTRelapse_LCT_sensitivety, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-  \KeywordTok{summary}\NormalTok{(fit_all)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + age + sex + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_LCT_sensitivety, age > 50)
-## 
-## REML criterion at convergence: -195.9
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.78966 -0.28216 -0.01351  0.31398  2.67225 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev. 
-##  STUDYID  (Intercept) 5.953e-03 7.716e-02
-##  site     (Intercept) 4.817e-16 2.195e-08
-##  Residual             5.349e-04 2.313e-02
-## Number of obs: 82, groups:  STUDYID, 41; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.629e+00  1.038e-01  3.698e+01  25.339
-## RandomArmPlacebo            -4.765e-03  2.518e-02  3.929e+01  -0.189
-## model_days                  -8.582e-05  3.680e-05  3.936e+01  -2.332
-## age                         -3.824e-03  1.549e-03  3.692e+01  -2.469
-## sexM                        -2.603e-02  2.467e-02  3.692e+01  -1.055
-## RandomArmPlacebo:model_days  1.422e-04  5.477e-05  3.975e+01   2.597
-##                             Pr(>|t|)    
-## (Intercept)                   <2e-16 ***
-## RandomArmPlacebo              0.8509    
-## model_days                    0.0249 *  
-## age                           0.0183 *  
-## sexM                          0.2982    
-## RandomArmPlacebo:model_days   0.0131 *  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy age    sexM  
-## RndmArmPlcb -0.194                            
-## model_days  -0.027  0.140                     
-## age         -0.978  0.069 -0.005              
-## sexM        -0.077 -0.032 -0.012 -0.036       
-## RndmArmPl:_  0.003 -0.176 -0.672  0.018  0.018
-\end{verbatim}
-
 \subsubsection{Running the right hemisphere
 RCTRelapse}\label{running-the-right-hemisphere-rctrelapse}
 
@@ -2087,14 +1792,13 @@ RCTRelapse}\label{running-the-right-hemisphere-rctrelapse}
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{thickness, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{""}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Cortical Thickness (mm)"}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_color_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\FloatTok{2.1}\NormalTok{,}\FloatTok{2.65}\NormalTok{), }\DataTypeTok{breaks =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\FloatTok{2.1}\NormalTok{,}\FloatTok{2.65}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{hemi)}
 \end{Highlighting}
 \end{Shaded}
@@ -2105,7 +1809,7 @@ RCTRelapse}\label{running-the-right-hemisphere-rctrelapse}
 \begin{Highlighting}[]
 \CommentTok{#run mixed linear model, with covariates}
 \NormalTok{  fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_RCT)}
-  \KeywordTok{summary}\NormalTok{(fit_all) }
+  \KeywordTok{summary}\NormalTok{(fit_all)  }
 \end{Highlighting}
 \end{Shaded}
 
@@ -2154,120 +1858,6 @@ RCTRelapse}\label{running-the-right-hemisphere-rctrelapse}
 ## sexM        -0.172  0.036  0.001              
 ## age         -0.902 -0.053  0.007 -0.079       
 ## RndmArmPl:_  0.037 -0.155 -0.593  0.003 -0.002
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{  fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\KeywordTok{poly}\NormalTok{(model_days,}\DecValTok{2}\NormalTok{) }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_RCT)}
-  \KeywordTok{summary}\NormalTok{(fit_all)  }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * poly(model_days, 2) + sex + age + (1 |  
-##     site) + (1 | STUDYID)
-##    Data: RCTRelapse_RCT
-## 
-## REML criterion at convergence: -430.9
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.21561 -0.44485  0.03024  0.46730  2.15254 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0056827 0.07538 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0003949 0.01987 
-## Number of obs: 144, groups:  STUDYID, 72; site, 4
-## 
-## Fixed effects:
-##                                         Estimate Std. Error         df
-## (Intercept)                            2.6132165  0.0353337 68.0479061
-## RandomArmPlacebo                      -0.0034339  0.0181596 67.9339039
-## poly(model_days, 2)1                  -0.1231555  0.0278262 68.8566920
-## poly(model_days, 2)2                  -0.0522991  0.0356468 71.6467538
-## sexM                                  -0.0075241  0.0182040 67.6448471
-## age                                   -0.0036334  0.0005951 67.9598214
-## RandomArmPlacebo:poly(model_days, 2)1  0.1842860  0.0478742 70.0158657
-## RandomArmPlacebo:poly(model_days, 2)2  0.0805093  0.0526235 71.3486642
-##                                       t value Pr(>|t|)    
-## (Intercept)                            73.958  < 2e-16 ***
-## RandomArmPlacebo                       -0.189 0.850580    
-## poly(model_days, 2)1                   -4.426 3.52e-05 ***
-## poly(model_days, 2)2                   -1.467 0.146713    
-## sexM                                   -0.413 0.680679    
-## age                                    -6.105 5.57e-08 ***
-## RandomArmPlacebo:poly(model_days, 2)1   3.849 0.000259 ***
-## RandomArmPlacebo:poly(model_days, 2)2   1.530 0.130460    
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 sexM   age    RAP:(_,2)1
-## RndmArmPlcb -0.201                                                
-## ply(md_,2)1 -0.027  0.021                                         
-## ply(md_,2)2 -0.053  0.017  0.204                                  
-## sexM        -0.171  0.037 -0.001  -0.008                          
-## age         -0.904 -0.054  0.017   0.049  -0.079                  
-## RnAP:(_,2)1  0.014  0.017 -0.581  -0.119   0.005 -0.010           
-## RnAP:(_,2)2  0.040  0.010 -0.138  -0.678   0.009 -0.038  0.269
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{    fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(thickness }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCTRelapse_RCT, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-  \KeywordTok{summary}\NormalTok{(fit_all) }
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + sex + age + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_RCT, age > 50)
-## 
-## REML criterion at convergence: -239.2
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.54404 -0.44475 -0.03315  0.46438  2.49974 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0062609 0.07913 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0003338 0.01827 
-## Number of obs: 90, groups:  STUDYID, 45; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.582e+00  9.879e-02  4.097e+01  26.131
-## RandomArmPlacebo            -2.360e-02  2.418e-02  4.250e+01  -0.976
-## model_days                  -8.545e-05  2.701e-05  4.317e+01  -3.163
-## sexM                        -2.534e-02  2.397e-02  4.091e+01  -1.057
-## age                         -2.865e-03  1.456e-03  4.093e+01  -1.967
-## RandomArmPlacebo:model_days  1.297e-04  4.197e-05  4.351e+01   3.089
-##                             Pr(>|t|)    
-## (Intercept)                  < 2e-16 ***
-## RandomArmPlacebo             0.33460    
-## model_days                   0.00286 ** 
-## sexM                         0.29669    
-## age                          0.05600 .  
-## RandomArmPlacebo:model_days  0.00349 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.173                            
-## model_days  -0.023  0.108                     
-## sexM        -0.187  0.023 -0.010              
-## age         -0.977  0.046 -0.002  0.068       
-## RndmArmPl:_  0.001 -0.136 -0.644  0.013  0.015
 \end{verbatim}
 
 \begin{Shaded}
@@ -2388,7 +1978,7 @@ plotting change for all participants
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-6-1.pdf}
+\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-5-1.pdf}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -2550,7 +2140,7 @@ Right Hemisphere & Placebo & MRdays & 0 & 0 & 1.373 & 0.179\\
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-11-1.pdf}
+\includegraphics{06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-10-1.pdf}
 
 \subsection{Exporatory ROI Analysis..}\label{exporatory-roi-analysis..}
 
@@ -2736,7 +2326,7 @@ This script analyses hemisphere wide surface area
 \CommentTok{#bring in data }
 \NormalTok{df <-}\StringTok{ }\KeywordTok{read_csv}\NormalTok{(}\StringTok{'../generated_csvs/STOPPD_participantsCT_20181111.csv'}\NormalTok{) }\CommentTok{#generated by 05_STOPPD_error in prepartion of Jason Lerch meeting}
 
-\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"#e6ab02"}\NormalTok{, }\StringTok{"#386cb0"}\NormalTok{)}
+\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\StringTok{"#FFC200"}\NormalTok{, }\StringTok{"#007aa3"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -2877,8 +2467,7 @@ Placebo & 14\\
 \StringTok{     }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\StringTok{ }\NormalTok{ThickChange) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }
+\StringTok{     }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
@@ -2978,15 +2567,14 @@ Placebo & 34\\
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{SurfArea, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Days between MRIs"}\NormalTok{) }\OperatorTok{+}\StringTok{  }
-\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\KeywordTok{bquote}\NormalTok{(}\StringTok{'Surface Area (x1000mm'}\OperatorTok{^}\DecValTok{2}\OperatorTok{*}\StringTok{')'}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Surface Area"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\DecValTok{59000}\NormalTok{,}\DecValTok{115000}\NormalTok{), }\DataTypeTok{breaks =} \KeywordTok{c}\NormalTok{(}\DecValTok{60000}\NormalTok{, }\DecValTok{80000}\NormalTok{, }\DecValTok{100000}\NormalTok{), }\DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{'60'}\NormalTok{,}\StringTok{'80'}\NormalTok{,}\StringTok{'100'}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\DecValTok{59000}\NormalTok{,}\DecValTok{115000}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{hemi)}
 \end{Highlighting}
 \end{Shaded}
@@ -3066,15 +2654,14 @@ RCTRelapse}\label{running-the-right-hemisphere-rctrelapse-1}
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{SurfArea, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{formula=}\NormalTok{y}\OperatorTok{~}\KeywordTok{poly}\NormalTok{(x,}\DecValTok{1}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Days between MRIs"}\NormalTok{) }\OperatorTok{+}\StringTok{  }
-\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{""}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Surface Area"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\DecValTok{59000}\NormalTok{,}\DecValTok{115000}\NormalTok{), }\DataTypeTok{breaks =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\DecValTok{59000}\NormalTok{,}\DecValTok{115000}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{hemi)}
 \end{Highlighting}
 \end{Shaded}
@@ -3224,7 +2811,7 @@ Anisotropy}\label{whole-skeleton-fractional-anisotropy}
 \CommentTok{#make a datediff column for time between scans}
 \NormalTok{df}\OperatorTok{$}\NormalTok{dateDiff <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{round}\NormalTok{(}\KeywordTok{difftime}\NormalTok{(df}\OperatorTok{$}\NormalTok{second_date, df}\OperatorTok{$}\NormalTok{first_date, }\DataTypeTok{units =} \StringTok{"days"}\NormalTok{), }\DecValTok{0}\NormalTok{))}
 
-\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"#e6ab02"}\NormalTok{, }\StringTok{"#386cb0"}\NormalTok{)}
+\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\StringTok{"#FFC200"}\NormalTok{, }\StringTok{"#007aa3"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -3473,12 +3060,11 @@ to consider these by site..
 \StringTok{   }\KeywordTok{geom_boxplot}\NormalTok{(}\DataTypeTok{outlier.shape =} \OtherTok{NA}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{0.0001}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{   }\KeywordTok{geom_dotplot}\NormalTok{(}\DataTypeTok{binaxis =} \StringTok{'y'}\NormalTok{, }\DataTypeTok{stackdir =} \StringTok{'center'}\NormalTok{) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{geom_hline}\NormalTok{(}\DataTypeTok{yintercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}
-\StringTok{   }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Change in Fractional Anisotropy"}\NormalTok{,}
-        \DataTypeTok{fill =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{   }\KeywordTok{xlab}\NormalTok{(}\OtherTok{NULL}\NormalTok{) }\OperatorTok{+}\StringTok{  }
+\StringTok{   }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Change in Fractional Anisotropy"}\NormalTok{) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
-\StringTok{   }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{   }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{())}
+\StringTok{   }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
@@ -3591,23 +3177,19 @@ factor)}\label{rct-relapse-with-time-as-factor-2}
 \begin{Highlighting}[]
 \NormalTok{RCTRelapse_wholeskelFA <-}\StringTok{ }\NormalTok{RCTRelapse_FA }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{filter}\NormalTok{(Tract }\OperatorTok{==}\StringTok{ "AverageFA"}\NormalTok{) }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{category =} \KeywordTok{factor}\NormalTok{(category, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"RCT"}\NormalTok{,}\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Off protocol"}\NormalTok{),}
-                           \DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{"Sustained remission"}\NormalTok{, }\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Discontinuation"}\NormalTok{)))}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{category =} \KeywordTok{factor}\NormalTok{(category, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"RCT"}\NormalTok{,}\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Off protocol"}\NormalTok{)))}
 \CommentTok{#plot}
 \NormalTok{RCTRelapse_wholeskelFA }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{FA, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =}\StringTok{"Days between MRIs"}\NormalTok{, }
-       \DataTypeTok{y =} \StringTok{"Fractional Anistotropy"}\NormalTok{,}
-       \DataTypeTok{shape =} \StringTok{"Status at scan 2"}\NormalTok{,}
-       \DataTypeTok{color =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{formula=}\NormalTok{y}\OperatorTok{~}\KeywordTok{poly}\NormalTok{(x,}\DecValTok{1}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Days between MRIs"}\NormalTok{) }\OperatorTok{+}\StringTok{  }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Fractional Anistotropy"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{())}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
@@ -3785,6 +3367,7 @@ Diffusivity}\label{whole-skeleton-mean-diffusivity}
 \KeywordTok{library}\NormalTok{(tidyverse)}
 \KeywordTok{library}\NormalTok{(lme4)}
 \KeywordTok{library}\NormalTok{(lmerTest)}
+\KeywordTok{library}\NormalTok{(growthmodels)}
 \KeywordTok{library}\NormalTok{(broom)}
 \end{Highlighting}
 \end{Shaded}
@@ -3803,7 +3386,7 @@ Diffusivity}\label{whole-skeleton-mean-diffusivity}
 \CommentTok{#make a datediff column for time between scans}
 \NormalTok{df}\OperatorTok{$}\NormalTok{dateDiff <-}\StringTok{ }\KeywordTok{as.numeric}\NormalTok{(}\KeywordTok{round}\NormalTok{(}\KeywordTok{difftime}\NormalTok{(df}\OperatorTok{$}\NormalTok{second_date, df}\OperatorTok{$}\NormalTok{first_date, }\DataTypeTok{units =} \StringTok{"days"}\NormalTok{), }\DecValTok{0}\NormalTok{))}
 
-\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"#e6ab02"}\NormalTok{, }\StringTok{"#386cb0"}\NormalTok{)}
+\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\StringTok{"#FFC200"}\NormalTok{, }\StringTok{"#007aa3"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -4072,12 +3655,11 @@ to consider these by site..
 \StringTok{   }\KeywordTok{geom_boxplot}\NormalTok{(}\DataTypeTok{outlier.shape =} \OtherTok{NA}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{0.0001}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{   }\KeywordTok{geom_dotplot}\NormalTok{(}\DataTypeTok{binaxis =} \StringTok{'y'}\NormalTok{, }\DataTypeTok{stackdir =} \StringTok{'center'}\NormalTok{) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{geom_hline}\NormalTok{(}\DataTypeTok{yintercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Change in Mean Diffusivity"}\NormalTok{,}
-        \DataTypeTok{fill =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{   }\KeywordTok{xlab}\NormalTok{(}\OtherTok{NULL}\NormalTok{) }\OperatorTok{+}\StringTok{  }
+\StringTok{   }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Change in Mean Diffusivity"}\NormalTok{) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{   }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
-\StringTok{   }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{   }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{())}
+\StringTok{   }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
@@ -4134,52 +3716,6 @@ to consider these by site..
 ## age         -0.921 -0.181 -0.201
 \end{verbatim}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{fit_rct <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(diffAverageSkel_MD }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCT_MD, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-\KeywordTok{summary}\NormalTok{(fit_rct)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: diffAverageSkel_MD ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_MD, age > 50)
-## 
-## REML criterion at convergence: -307.5
-## 
-## Scaled residuals: 
-##    Min     1Q Median     3Q    Max 
-## -2.100 -0.750  0.201  0.728  1.082 
-## 
-## Random effects:
-##  Groups   Name        Variance       Std.Dev.  
-##  site     (Intercept) 0.000000000000 0.00000000
-##  Residual             0.000000001037 0.00003221
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                       Estimate    Std. Error            df t value
-## (Intercept)       0.0000692085  0.0000579832 17.9999999997   1.194
-## RandomArmPlacebo -0.0000474697  0.0000144412 17.9999999997  -3.287
-## sexM             -0.0000235345  0.0000139829 17.9999999998  -1.683
-## age              -0.0000003901  0.0000008475 17.9999999997  -0.460
-##                  Pr(>|t|)   
-## (Intercept)        0.2481   
-## RandomArmPlacebo   0.0041 **
-## sexM               0.1096   
-## age                0.6508   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.360              
-## sexM        -0.184  0.188       
-## age         -0.977  0.238  0.045
-\end{verbatim}
-
 \subsection{RCT \& Relapse (with time as
 factor)}\label{rct-relapse-with-time-as-factor-3}
 
@@ -4187,49 +3723,23 @@ factor)}\label{rct-relapse-with-time-as-factor-3}
 \begin{Highlighting}[]
 \NormalTok{RCTRelapse_wholeskelMD <-}\StringTok{ }\NormalTok{RCTRelapse_MD }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{filter}\NormalTok{(Tract }\OperatorTok{==}\StringTok{ "AverageFA"}\NormalTok{) }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{category =} \KeywordTok{factor}\NormalTok{(category, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"RCT"}\NormalTok{,}\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Off protocol"}\NormalTok{),}
-                           \DataTypeTok{labels =} \KeywordTok{c}\NormalTok{(}\StringTok{"Sustained remission"}\NormalTok{, }\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Discontinuation"}\NormalTok{)))}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{category =} \KeywordTok{factor}\NormalTok{(category, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"RCT"}\NormalTok{,}\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Off protocol"}\NormalTok{)))}
 \CommentTok{#plot}
 \NormalTok{RCTRelapse_wholeskelMD }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{MD, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =}\StringTok{"Days between MRIs"}\NormalTok{, }
-       \DataTypeTok{y =} \StringTok{"Mean Diffusivity"}\NormalTok{,}
-       \DataTypeTok{shape =} \StringTok{"Status at scan 2"}\NormalTok{,}
-       \DataTypeTok{color =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{formula=}\NormalTok{y}\OperatorTok{~}\KeywordTok{poly}\NormalTok{(x,}\DecValTok{1}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Days between MRIs"}\NormalTok{) }\OperatorTok{+}\StringTok{  }
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Mean Diffusivity"}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{())}
+\StringTok{  }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
 \includegraphics{09_STOPPD_MD-meanFAskel_files/figure-latex/RCTRelapse_MD_plot_fig3D-1.pdf}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{#plot}
-\NormalTok{RCTRelapse_wholeskelMD }\OperatorTok{%>%}
-\StringTok{  }\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{model_days, }\DataTypeTok{y=}\NormalTok{MD, }\DataTypeTok{fill =}\NormalTok{ RandomArm)) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
-\StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{, }\DataTypeTok{formula =} \StringTok{'y ~ poly(x,2)'}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"grey40"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =}\StringTok{"Days between MRIs"}\NormalTok{, }
-       \DataTypeTok{y =} \StringTok{"Mean Diffusivity"}\NormalTok{,}
-       \DataTypeTok{shape =} \StringTok{"Status at scan 2"}\NormalTok{,}
-       \DataTypeTok{color =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }
-\end{Highlighting}
-\end{Shaded}
-
-\includegraphics{09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-11-1.pdf}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -4288,129 +3798,6 @@ factor)}\label{rct-relapse-with-time-as-factor-3}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(MD }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\KeywordTok{poly}\NormalTok{(model_days,}\DecValTok{2}\NormalTok{) }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_wholeskelMD)}
-\KeywordTok{summary}\NormalTok{(fit_all)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: MD ~ RandomArm * poly(model_days, 2) + sex + age + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: RCTRelapse_wholeskelMD
-## 
-## REML criterion at convergence: -2243.2
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -1.7710 -0.4231 -0.0214  0.4348  1.9231 
-## 
-## Random effects:
-##  Groups   Name        Variance       Std.Dev.  
-##  STUDYID  (Intercept) 0.000000007740 0.00008798
-##  site     (Intercept) 0.000000008817 0.00009390
-##  Residual             0.000000000416 0.00002040
-## Number of obs: 142, groups:  STUDYID, 71; site, 4
-## 
-## Fixed effects:
-##                                            Estimate    Std. Error
-## (Intercept)                            0.0009405890  0.0000628286
-## RandomArmPlacebo                      -0.0000459239  0.0000216290
-## poly(model_days, 2)1                   0.0001180378  0.0000285567
-## poly(model_days, 2)2                   0.0000383370  0.0000377433
-## sexM                                   0.0000583251  0.0000216053
-## age                                    0.0000076669  0.0000006992
-## RandomArmPlacebo:poly(model_days, 2)1 -0.0001551340  0.0000491709
-## RandomArmPlacebo:poly(model_days, 2)2 -0.0001134923  0.0000541825
-##                                                  df t value
-## (Intercept)                            8.6184324574  14.971
-## RandomArmPlacebo                      64.3958445145  -2.123
-## poly(model_days, 2)1                  67.7596115332   4.133
-## poly(model_days, 2)2                  69.7879402183   1.016
-## sexM                                  64.1643833310   2.700
-## age                                   64.4096266882  10.965
-## RandomArmPlacebo:poly(model_days, 2)1 68.7043960730  -3.155
-## RandomArmPlacebo:poly(model_days, 2)2 69.5758137895  -2.095
-##                                                   Pr(>|t|)    
-## (Intercept)                           0.000000181921518238 ***
-## RandomArmPlacebo                                  0.037581 *  
-## poly(model_days, 2)1                              0.000101 ***
-## poly(model_days, 2)2                              0.313267    
-## sexM                                              0.008866 ** 
-## age                                   0.000000000000000227 ***
-## RandomArmPlacebo:poly(model_days, 2)1             0.002382 ** 
-## RandomArmPlacebo:poly(model_days, 2)2             0.039847 *  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 sexM   age    RAP:(_,2)1
-## RndmArmPlcb -0.137                                                
-## ply(md_,2)1 -0.017  0.020                                         
-## ply(md_,2)2 -0.035  0.015  0.201                                  
-## sexM        -0.128  0.072  0.002  -0.002                          
-## age         -0.590 -0.077  0.015   0.047  -0.086                  
-## RnAP:(_,2)1  0.010  0.014 -0.581  -0.117   0.001 -0.009           
-## RnAP:(_,2)2  0.029  0.007 -0.140  -0.697   0.001 -0.037  0.269
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(MD }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=} \KeywordTok{filter}\NormalTok{(RCTRelapse_wholeskelMD, age }\OperatorTok{>}\StringTok{ }\DecValTok{50}\NormalTok{))}
-\KeywordTok{summary}\NormalTok{(fit_all)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: 
-## MD ~ RandomArm * model_days + sex + age + (1 | site) + (1 | STUDYID)
-##    Data: filter(RCTRelapse_wholeskelMD, age > 50)
-## 
-## REML criterion at convergence: -1355.6
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -1.98980 -0.50569  0.01791  0.50070  1.91314 
-## 
-## Random effects:
-##  Groups   Name        Variance        Std.Dev.  
-##  STUDYID  (Intercept) 0.0000000047872 0.00006919
-##  site     (Intercept) 0.0000000133212 0.00011542
-##  Residual             0.0000000004261 0.00002064
-## Number of obs: 88, groups:  STUDYID, 44; site, 4
-## 
-## Fixed effects:
-##                                   Estimate     Std. Error             df
-## (Intercept)                  0.00051966649  0.00011685447 26.46026744371
-## RandomArmPlacebo            -0.00001051201  0.00002230098 39.63324516520
-## model_days                   0.00000011233  0.00000003064 42.34768958830
-## sexM                         0.00009305201  0.00002171790 37.13842602584
-## age                          0.00001336655  0.00000145523 37.95315248190
-## RandomArmPlacebo:model_days -0.00000015901  0.00000004742 42.91867854184
-##                             t value        Pr(>|t|)    
-## (Intercept)                   4.447        0.000140 ***
-## RandomArmPlacebo             -0.471        0.639961    
-## model_days                    3.666        0.000682 ***
-## sexM                          4.285        0.000124 ***
-## age                           9.185 0.0000000000347 ***
-## RandomArmPlacebo:model_days  -3.353        0.001677 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.227                            
-## model_days  -0.032  0.138                     
-## sexM        -0.207  0.062 -0.008              
-## age         -0.852  0.144  0.008  0.125       
-## RndmArmPl:_  0.010 -0.172 -0.646  0.013  0.008
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
 \NormalTok{RCTRelapse_wholeskelMD_sense <-}\StringTok{ }\NormalTok{RCTRelapse_wholeskelMD }\OperatorTok{%>%}\StringTok{ }\KeywordTok{filter}\NormalTok{(category }\OperatorTok{!=}\StringTok{ "Off protocol"}\NormalTok{)}
 \CommentTok{#run mixed linear model, with covariates}
 \NormalTok{fit_all <-}\StringTok{ }\KeywordTok{lmer}\NormalTok{(MD }\OperatorTok{~}\StringTok{ }\NormalTok{RandomArm}\OperatorTok{*}\NormalTok{model_days }\OperatorTok{+}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{site) }\OperatorTok{+}\StringTok{ }\NormalTok{(}\DecValTok{1}\OperatorTok{|}\NormalTok{STUDYID), }\DataTypeTok{data=}\NormalTok{ RCTRelapse_wholeskelMD_sense)}
@@ -4425,44 +3812,44 @@ factor)}\label{rct-relapse-with-time-as-factor-3}
 ## MD ~ RandomArm * model_days + sex + age + (1 | site) + (1 | STUDYID)
 ##    Data: RCTRelapse_wholeskelMD_sense
 ## 
-## REML criterion at convergence: -2246.8
+## REML criterion at convergence: -2074.6
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.75931 -0.44531 -0.00936  0.39581  1.91032 
+## -1.75438 -0.43253 -0.00483  0.39766  1.90966 
 ## 
 ## Random effects:
-##  Groups   Name        Variance        Std.Dev.  
-##  STUDYID  (Intercept) 0.0000000077174 0.00008785
-##  site     (Intercept) 0.0000000087245 0.00009340
-##  Residual             0.0000000004336 0.00002082
-## Number of obs: 142, groups:  STUDYID, 71; site, 4
+##  Groups   Name        Variance       Std.Dev.  
+##  STUDYID  (Intercept) 0.000000007944 0.00008913
+##  site     (Intercept) 0.000000008402 0.00009166
+##  Residual             0.000000000447 0.00002114
+## Number of obs: 132, groups:  STUDYID, 66; site, 4
 ## 
 ## Fixed effects:
 ##                                   Estimate     Std. Error             df
-## (Intercept)                  0.00093603329  0.00006263043  8.68938506644
-## RandomArmPlacebo            -0.00003682637  0.00002181291 66.85102591970
-## model_days                   0.00000008623  0.00000002197 69.34886239368
-## sexM                         0.00005832529  0.00002158631 64.19751680155
-## age                          0.00000762514  0.00000069783 64.16140897910
-## RandomArmPlacebo:model_days -0.00000009581  0.00000003699 69.94946322992
-##                             t value             Pr(>|t|)    
-## (Intercept)                  14.945 0.000000169265448769 ***
-## RandomArmPlacebo             -1.688             0.096017 .  
-## model_days                    3.925             0.000202 ***
-## sexM                          2.702             0.008808 ** 
-## age                          10.927 0.000000000000000276 ***
-## RandomArmPlacebo:model_days  -2.590             0.011664 *  
+## (Intercept)                  0.00093650663  0.00006296200  9.36164315607
+## RandomArmPlacebo            -0.00003402152  0.00002283248 61.70059785288
+## model_days                   0.00000009109  0.00000002314 64.26215950200
+## sexM                         0.00006069042  0.00002282329 59.19528186801
+## age                          0.00000756727  0.00000073617 59.14985441694
+## RandomArmPlacebo:model_days -0.00000010128  0.00000003807 64.80607378513
+##                             t value            Pr(>|t|)    
+## (Intercept)                  14.874 0.00000007918918823 ***
+## RandomArmPlacebo             -1.490            0.141306    
+## model_days                    3.936            0.000206 ***
+## sexM                          2.659            0.010062 *  
+## age                          10.279 0.00000000000000881 ***
+## RandomArmPlacebo:model_days  -2.661            0.009824 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.140                            
-## model_days  -0.041  0.106                     
-## sexM        -0.129  0.071  0.003              
-## age         -0.590 -0.076  0.006 -0.086       
-## RndmArmPl:_  0.023 -0.139 -0.594  0.001 -0.002
+## RndmArmPlcb -0.147                            
+## model_days  -0.045  0.108                     
+## sexM        -0.092  0.029  0.000              
+## age         -0.608 -0.072  0.008 -0.134       
+## RndmArmPl:_  0.027 -0.142 -0.608  0.005 -0.006
 \end{verbatim}
 
 \subsection{adding the non-RCT people to the
@@ -4490,7 +3877,7 @@ boxplot}\label{adding-the-non-rct-people-to-the-boxplot}
 ## `stat_bindot()` using `bins = 30`. Pick better value with `binwidth`.
 \end{verbatim}
 
-\includegraphics{09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-12-1.pdf}
+\includegraphics{09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-11-1.pdf}
 
 \subsubsection{post-hoc look at subgroups against 0 change
 null}\label{post-hoc-look-at-subgroups-against-0-change-null}
@@ -4698,7 +4085,7 @@ Volumes}\label{freesurfer-derived-subcortical-volumes}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"#e6ab02"}\NormalTok{, }\StringTok{"#386cb0"}\NormalTok{)}
+\NormalTok{RandomArmColors =}\StringTok{ }\KeywordTok{c}\NormalTok{( }\StringTok{"#FFC200"}\NormalTok{, }\StringTok{"#007aa3"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -4714,7 +4101,7 @@ Volumes}\label{freesurfer-derived-subcortical-volumes}
 \NormalTok{         MR_exclusion }\OperatorTok{==}\StringTok{ "No"}\NormalTok{) }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{offLabel  =} \KeywordTok{if_else}\NormalTok{(third_complete }\OperatorTok{==}\StringTok{ "Yes"}\NormalTok{, }\StringTok{"Yes"}\NormalTok{, }\StringTok{''}\NormalTok{),}
          \DataTypeTok{dateDiff =} \KeywordTok{round}\NormalTok{(}\KeywordTok{difftime}\NormalTok{(second_date, first_date, }\DataTypeTok{units =} \StringTok{"days"}\NormalTok{), }\DecValTok{0}\NormalTok{),}
-         \DataTypeTok{STUDYID =} \KeywordTok{as.character}\NormalTok{(STUDYID),}
+         \DataTypeTok{STUDYID =} \KeywordTok{parse_character}\NormalTok{(STUDYID),}
          \DataTypeTok{age =} \KeywordTok{parse_number}\NormalTok{(age),}
          \DataTypeTok{category =} \KeywordTok{factor}\NormalTok{(second_timepoint, }\DataTypeTok{levels =} \KeywordTok{c}\NormalTok{(}\StringTok{"RCT"}\NormalTok{,}\StringTok{"Relapse"}\NormalTok{, }\StringTok{"Off protocol"}\NormalTok{))) }\OperatorTok{%>%}
 \StringTok{  }\KeywordTok{select}\NormalTok{(STUDYID, randomization, sex, age, category, offLabel, dateDiff)}
@@ -4955,14 +4342,13 @@ volumes)}\label{run-rct-analysis-because-its-simpler-across-volumes}
 \StringTok{     }\KeywordTok{geom_boxplot}\NormalTok{(}\DataTypeTok{outlier.shape =} \OtherTok{NA}\NormalTok{, }\DataTypeTok{alpha =} \FloatTok{0.0001}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{     }\KeywordTok{geom_dotplot}\NormalTok{(}\DataTypeTok{binaxis =} \StringTok{'y'}\NormalTok{, }\DataTypeTok{stackdir =} \StringTok{'center'}\NormalTok{) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{geom_hline}\NormalTok{(}\DataTypeTok{yintercept =} \DecValTok{0}\NormalTok{) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{labs}\NormalTok{( }\DataTypeTok{x=}\OtherTok{NULL}\NormalTok{,      }
-           \DataTypeTok{y =} \KeywordTok{bquote}\NormalTok{(}\StringTok{'Change in Volume (mm'}\OperatorTok{^}\DecValTok{3}\OperatorTok{*}\StringTok{')'}\NormalTok{),}
-           \DataTypeTok{fill =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{     }\KeywordTok{ggtitle}\NormalTok{(}\StringTok{"Freesurfer Subcortical Volume Changes"}\NormalTok{) }\OperatorTok{+}
+\StringTok{     }\KeywordTok{xlab}\NormalTok{(}\OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
+\StringTok{     }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Change in Volume"}\NormalTok{) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\NormalTok{)) }\OperatorTok{+}
 \StringTok{     }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{Region) }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme_bw}\NormalTok{() }\OperatorTok{+}
-\StringTok{     }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor.x =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major.x =} \KeywordTok{element_blank}\NormalTok{())}
+\StringTok{     }\KeywordTok{theme_bw}\NormalTok{()}
 \end{Highlighting}
 \end{Shaded}
 
@@ -5322,12 +4708,11 @@ Placebo & 34\\
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \KeywordTok{bquote}\NormalTok{(}\StringTok{'Volume (mm'}\OperatorTok{^}\DecValTok{3}\OperatorTok{*}\StringTok{')'}\NormalTok{), }\DataTypeTok{colour =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Volume"}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{roi)}
 \end{Highlighting}
 \end{Shaded}
@@ -5483,12 +4868,11 @@ Placebo & 34\\
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \KeywordTok{bquote}\NormalTok{(}\StringTok{'Volume (mm'}\OperatorTok{^}\DecValTok{3}\OperatorTok{*}\StringTok{')'}\NormalTok{), }\DataTypeTok{colour =} \StringTok{"Group"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Volume"}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{roi)}
 \end{Highlighting}
 \end{Shaded}
@@ -5697,12 +5081,11 @@ Placebo & 34\\
 \StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{shape =}\NormalTok{ category)) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_line}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{group=}\NormalTok{STUDYID, }\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{alpha =} \FloatTok{0.5}\NormalTok{) }\OperatorTok{+}\StringTok{ }
 \StringTok{  }\KeywordTok{geom_smooth}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{color =}\NormalTok{ RandomArm), }\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{) }\OperatorTok{+}
-\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \KeywordTok{bquote}\NormalTok{(}\StringTok{'Volume (mm'}\OperatorTok{^}\DecValTok{3}\OperatorTok{*}\StringTok{')'}\NormalTok{), }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{x =} \StringTok{"Days between MRIs"}\NormalTok{, }\DataTypeTok{y =} \StringTok{"Volume"}\NormalTok{, }\DataTypeTok{colour =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_colour_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_fill_manual}\NormalTok{(}\DataTypeTok{values =}\NormalTok{ RandomArmColors) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{scale_shape_manual}\NormalTok{(}\DataTypeTok{values =} \KeywordTok{c}\NormalTok{(}\DecValTok{21}\OperatorTok{:}\DecValTok{23}\NormalTok{)) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{theme_bw}\NormalTok{()  }\OperatorTok{+}
-\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{panel.grid.minor =} \KeywordTok{element_blank}\NormalTok{(), }\DataTypeTok{panel.grid.major =} \KeywordTok{element_blank}\NormalTok{()) }\OperatorTok{+}
 \StringTok{  }\KeywordTok{facet_wrap}\NormalTok{(}\OperatorTok{~}\NormalTok{roi)}
 \end{Highlighting}
 \end{Shaded}

@@ -34,7 +34,7 @@ df$RandomArm <- factor(df$randomization,
                        levels = c("O", "P"),
                        labels = c("Olanzapine", "Placebo"))
 
-RandomArmColors = c("#e6ab02", "#386cb0")
+RandomArmColors = c( "#FFC200", "#007aa3")
 
 # set category levels so that RCT and Relapse are at the top
 df <- df %>%
@@ -159,7 +159,7 @@ P & 14\\
 
 ```r
 fit_all <- lmer(LThickness_change ~ RandomArm + sex + age + (1|site), data= RCT_CT)
-summary(fit_all) 
+summary(fit_all)  
 ```
 
 ```
@@ -194,45 +194,6 @@ summary(fit_all)
 ## RndmArmPlcb -0.007              
 ## sexM        -0.066  0.076       
 ## age         -0.881 -0.194 -0.178
-```
-
-```r
-fit_all <- lmer(LThickness_change ~ RandomArm + sex + age + (1|site), data= filter(RCT_CT, age > 50))
-summary(fit_all) 
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: LThickness_change ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_CT, age > 50)
-## 
-## REML criterion at convergence: -79.6
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -1.40665 -0.49771 -0.08412  0.38898  2.38786 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  site     (Intercept) 0.0002065 0.01437 
-##  Residual             0.0002544 0.01595 
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                    Estimate Std. Error         df t value Pr(>|t|)    
-## (Intercept)      -0.0109777  0.0320852 17.7740149  -0.342   0.7363    
-## RandomArmPlacebo  0.0392553  0.0072047 15.4911794   5.449    6e-05 ***
-## sexM              0.0152211  0.0070528 15.6737362   2.158   0.0468 *  
-## age              -0.0004065  0.0004600 16.9092736  -0.884   0.3893    
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.304              
-## sexM        -0.167  0.176       
-## age         -0.955  0.202  0.045
 ```
 
 ```r
@@ -274,45 +235,6 @@ summary(fit_all)
 ## age         -0.915 -0.184 -0.196
 ```
 
-```r
-fit_all <- lmer(RThickness_change ~ RandomArm + sex + age + (1|site), data= filter(RCT_CT, age > 50))
-summary(fit_all)  
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: RThickness_change ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_CT, age > 50)
-## 
-## REML criterion at convergence: -74.4
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -1.1571 -0.7265 -0.2267  0.7086  1.5437 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  site     (Intercept) 9.295e-05 0.009641
-##  Residual             3.875e-04 0.019686
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                    Estimate Std. Error         df t value Pr(>|t|)   
-## (Intercept)       0.0176426  0.0376575 17.9240469   0.469  0.64507   
-## RandomArmPlacebo  0.0303258  0.0088747 15.4469971   3.417  0.00368 **
-## sexM             -0.0073636  0.0086525 15.8301086  -0.851  0.40744   
-## age              -0.0005918  0.0005480 17.7446154  -1.080  0.29471   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.326              
-## sexM        -0.178  0.179       
-## age         -0.971  0.214  0.048
-```
-
 ### looking at the same thing for Right CT
 
 
@@ -331,51 +253,10 @@ ggplot(aes(x= RandomArm, y = mm, fill = RandomArm)) +
      scale_fill_manual(values = RandomArmColors) +
      scale_shape_manual(values = c(21)) +
      facet_wrap(~ ThickChange) +
-     theme_bw() +
-     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
+     theme_bw()
 ```
 
 ![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/RCT_CT_facet_boxplot_fig2A-1.pdf)<!-- --> 
-
-
-```r
-#boxplot of difference in thickness (y axis) by randoMR_exclusion == "No"mization group (x axis)
-RCT_CT %>%
-  gather(TCT, mm, LThickness_change, RThickness_change) %>%
-  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
-                              labels = c("Left Hemisphere", "Right Hemisphere"))) %>%
-ggplot(aes(x= RandomArm, y = mm, fill = RandomArm)) + 
-     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
-     geom_dotplot(binaxis = 'y', stackdir = 'center', binwidth = 0.005) +
-     geom_hline(yintercept = 0) +
-     labs(x = NULL, y = "Change in Cortical Thickness (mm)") +
-     scale_fill_manual(values = RandomArmColors) +
-     scale_shape_manual(values = c(21)) +
-     facet_wrap(~ ThickChange) +
-     theme_bw() +
-     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
-```
-
-![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/RCT_CT_facet_boxplot_fig2Aa-1.pdf)<!-- --> 
-
-```r
-RCT_CT %>%
-  gather(TCT, mm, LThickness_change, RThickness_change) %>%
-  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
-                              labels = c("Left Hemisphere", "Right Hemisphere"))) %>%
-ggplot(aes(x= RandomArm, y = mm, fill = factor(age > 50))) + 
-     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
-     geom_dotplot(binaxis = 'y', stackdir = 'center', binwidth = 0.005) +
-     geom_hline(yintercept = 0) +
-     labs(x = NULL, y = "Change in Cortical Thickness (mm)") +
-     scale_fill_manual(values = RandomArmColors) +
-     scale_shape_manual(values = c(21)) +
-     facet_wrap(~ ThickChange) +
-     theme_bw() +
-     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
-```
-
-![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-5-1.pdf)<!-- --> 
 
 
 ## RCT & Relapse (with time as factor)
@@ -436,14 +317,13 @@ RCTRelapse_LCT %>%
   ggplot(aes(x=model_days, y=thickness, fill = RandomArm)) + 
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
-  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
+  geom_smooth(aes(color = RandomArm), method="lm") +
   labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
   scale_color_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
   scale_y_continuous(limits = c(2.1,2.65)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  theme_bw()  +
   facet_wrap(~hemi)
 ```
 
@@ -506,58 +386,6 @@ RCTRelapse_LCT %>%
 ## RndmArmPl:_  0.043 -0.176 -0.594 -0.003  0.004
 ```
 
-```r
-  fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= filter(RCTRelapse_LCT, age > 50))
-  summary(fit_all)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + age + sex + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_LCT, age > 50)
-## 
-## REML criterion at convergence: -224.2
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.89115 -0.28624 -0.03731  0.31448  2.80017 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0059128 0.07689 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0004928 0.02220 
-## Number of obs: 90, groups:  STUDYID, 45; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.608e+00  9.673e-02  4.098e+01  26.964
-## RandomArmPlacebo            -1.602e-02  2.379e-02  4.332e+01  -0.673
-## model_days                  -8.771e-05  3.280e-05  4.330e+01  -2.674
-## age                         -3.360e-03  1.426e-03  4.092e+01  -2.357
-## sexM                        -2.640e-02  2.347e-02  4.090e+01  -1.125
-## RandomArmPlacebo:model_days  1.446e-04  5.091e-05  4.381e+01   2.840
-##                             Pr(>|t|)    
-## (Intercept)                  < 2e-16 ***
-## RandomArmPlacebo             0.50429    
-## model_days                   0.01053 *  
-## age                          0.02330 *  
-## sexM                         0.26713    
-## RandomArmPlacebo:model_days  0.00682 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy age    sexM  
-## RndmArmPlcb -0.172                            
-## model_days  -0.029  0.133                     
-## age         -0.977  0.045 -0.003              
-## sexM        -0.187  0.022 -0.013  0.068       
-## RndmArmPl:_  0.001 -0.168 -0.644  0.018  0.016
-```
-
 
 
 
@@ -614,116 +442,6 @@ RCTRelapse_LCT %>%
 ## RndmArmPl:_  0.051 -0.184 -0.608 -0.008  0.009
 ```
 
-```r
-  fit_all <- lmer(thickness ~ RandomArm*poly(model_days,2) + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_LCT_sensitivety)
-  summary(fit_all)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * poly(model_days, 2) + age + sex + (1 |  
-##     site) + (1 | STUDYID)
-##    Data: RCTRelapse_LCT_sensitivety
-## 
-## REML criterion at convergence: -391.5
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.53615 -0.40640 -0.00153  0.45687  2.44001 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0052379 0.07237 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0004715 0.02171 
-## Number of obs: 134, groups:  STUDYID, 67; site, 4
-## 
-## Fixed effects:
-##                                         Estimate Std. Error         df
-## (Intercept)                            2.648e+00  3.479e-02  6.320e+01
-## RandomArmPlacebo                       1.463e-02  1.814e-02  6.315e+01
-## poly(model_days, 2)1                  -1.125e-01  3.055e-02  6.406e+01
-## poly(model_days, 2)2                  -8.140e-02  3.978e-02  6.759e+01
-## age                                   -4.422e-03  5.976e-04  6.305e+01
-## sexM                                  -5.569e-05  1.833e-02  6.277e+01
-## RandomArmPlacebo:poly(model_days, 2)1  2.086e-01  5.181e-02  6.556e+01
-## RandomArmPlacebo:poly(model_days, 2)2  1.769e-01  5.713e-02  6.723e+01
-##                                       t value Pr(>|t|)    
-## (Intercept)                            76.112  < 2e-16 ***
-## RandomArmPlacebo                        0.807 0.422844    
-## poly(model_days, 2)1                   -3.683 0.000475 ***
-## poly(model_days, 2)2                   -2.046 0.044655 *  
-## age                                    -7.399    4e-10 ***
-## sexM                                   -0.003 0.997585    
-## RandomArmPlacebo:poly(model_days, 2)1   4.025 0.000150 ***
-## RandomArmPlacebo:poly(model_days, 2)2   3.097 0.002854 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 age    sexM   RAP:(_,2)1
-## RndmArmPlcb -0.205                                                
-## ply(md_,2)1 -0.031  0.026                                         
-## ply(md_,2)2 -0.057  0.024  0.186                                  
-## age         -0.902 -0.053  0.019   0.048                          
-## sexM        -0.115 -0.006 -0.004  -0.008  -0.127                  
-## RnAP:(_,2)1  0.020  0.018 -0.590  -0.110  -0.015  0.011           
-## RnAP:(_,2)2  0.044  0.009 -0.130  -0.697  -0.039  0.010  0.278
-```
-
-```r
-    fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= filter(RCTRelapse_LCT_sensitivety, age > 50))
-  summary(fit_all)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + age + sex + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_LCT_sensitivety, age > 50)
-## 
-## REML criterion at convergence: -195.9
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.78966 -0.28216 -0.01351  0.31398  2.67225 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev. 
-##  STUDYID  (Intercept) 5.953e-03 7.716e-02
-##  site     (Intercept) 4.817e-16 2.195e-08
-##  Residual             5.349e-04 2.313e-02
-## Number of obs: 82, groups:  STUDYID, 41; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.629e+00  1.038e-01  3.698e+01  25.339
-## RandomArmPlacebo            -4.765e-03  2.518e-02  3.929e+01  -0.189
-## model_days                  -8.582e-05  3.680e-05  3.936e+01  -2.332
-## age                         -3.824e-03  1.549e-03  3.692e+01  -2.469
-## sexM                        -2.603e-02  2.467e-02  3.692e+01  -1.055
-## RandomArmPlacebo:model_days  1.422e-04  5.477e-05  3.975e+01   2.597
-##                             Pr(>|t|)    
-## (Intercept)                   <2e-16 ***
-## RandomArmPlacebo              0.8509    
-## model_days                    0.0249 *  
-## age                           0.0183 *  
-## sexM                          0.2982    
-## RandomArmPlacebo:model_days   0.0131 *  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy age    sexM  
-## RndmArmPlcb -0.194                            
-## model_days  -0.027  0.140                     
-## age         -0.978  0.069 -0.005              
-## sexM        -0.077 -0.032 -0.012 -0.036       
-## RndmArmPl:_  0.003 -0.176 -0.672  0.018  0.018
-```
-
 ### Running the right hemisphere RCTRelapse
 
 
@@ -745,14 +463,13 @@ RCTRelapse_RCT %>%
   ggplot(aes(x=model_days, y=thickness, fill = RandomArm)) + 
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
-  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
-  labs(x = "Days between MRIs", y = "", colour = NULL) +
+  geom_smooth(aes(color = RandomArm), method="lm") +
+  labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
   scale_color_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
-  scale_y_continuous(limits = c(2.1,2.65), breaks = NULL) +
+  scale_y_continuous(limits = c(2.1,2.65)) +
   theme_bw()  +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   facet_wrap(~hemi)
 ```
 
@@ -761,7 +478,7 @@ RCTRelapse_RCT %>%
 ```r
 #run mixed linear model, with covariates
   fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_RCT)
-  summary(fit_all) 
+  summary(fit_all)  
 ```
 
 ```
@@ -809,116 +526,6 @@ RCTRelapse_RCT %>%
 ## sexM        -0.172  0.036  0.001              
 ## age         -0.902 -0.053  0.007 -0.079       
 ## RndmArmPl:_  0.037 -0.155 -0.593  0.003 -0.002
-```
-
-```r
-  fit_all <- lmer(thickness ~ RandomArm*poly(model_days,2) + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_RCT)
-  summary(fit_all)  
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * poly(model_days, 2) + sex + age + (1 |  
-##     site) + (1 | STUDYID)
-##    Data: RCTRelapse_RCT
-## 
-## REML criterion at convergence: -430.9
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.21561 -0.44485  0.03024  0.46730  2.15254 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0056827 0.07538 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0003949 0.01987 
-## Number of obs: 144, groups:  STUDYID, 72; site, 4
-## 
-## Fixed effects:
-##                                         Estimate Std. Error         df
-## (Intercept)                            2.6132165  0.0353337 68.0479061
-## RandomArmPlacebo                      -0.0034339  0.0181596 67.9339039
-## poly(model_days, 2)1                  -0.1231555  0.0278262 68.8566920
-## poly(model_days, 2)2                  -0.0522991  0.0356468 71.6467538
-## sexM                                  -0.0075241  0.0182040 67.6448471
-## age                                   -0.0036334  0.0005951 67.9598214
-## RandomArmPlacebo:poly(model_days, 2)1  0.1842860  0.0478742 70.0158657
-## RandomArmPlacebo:poly(model_days, 2)2  0.0805093  0.0526235 71.3486642
-##                                       t value Pr(>|t|)    
-## (Intercept)                            73.958  < 2e-16 ***
-## RandomArmPlacebo                       -0.189 0.850580    
-## poly(model_days, 2)1                   -4.426 3.52e-05 ***
-## poly(model_days, 2)2                   -1.467 0.146713    
-## sexM                                   -0.413 0.680679    
-## age                                    -6.105 5.57e-08 ***
-## RandomArmPlacebo:poly(model_days, 2)1   3.849 0.000259 ***
-## RandomArmPlacebo:poly(model_days, 2)2   1.530 0.130460    
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 sexM   age    RAP:(_,2)1
-## RndmArmPlcb -0.201                                                
-## ply(md_,2)1 -0.027  0.021                                         
-## ply(md_,2)2 -0.053  0.017  0.204                                  
-## sexM        -0.171  0.037 -0.001  -0.008                          
-## age         -0.904 -0.054  0.017   0.049  -0.079                  
-## RnAP:(_,2)1  0.014  0.017 -0.581  -0.119   0.005 -0.010           
-## RnAP:(_,2)2  0.040  0.010 -0.138  -0.678   0.009 -0.038  0.269
-```
-
-```r
-    fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= filter(RCTRelapse_RCT, age > 50))
-  summary(fit_all) 
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: thickness ~ RandomArm * model_days + sex + age + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: filter(RCTRelapse_RCT, age > 50)
-## 
-## REML criterion at convergence: -239.2
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -2.54404 -0.44475 -0.03315  0.46438  2.49974 
-## 
-## Random effects:
-##  Groups   Name        Variance  Std.Dev.
-##  STUDYID  (Intercept) 0.0062609 0.07913 
-##  site     (Intercept) 0.0000000 0.00000 
-##  Residual             0.0003338 0.01827 
-## Number of obs: 90, groups:  STUDYID, 45; site, 4
-## 
-## Fixed effects:
-##                               Estimate Std. Error         df t value
-## (Intercept)                  2.582e+00  9.879e-02  4.097e+01  26.131
-## RandomArmPlacebo            -2.360e-02  2.418e-02  4.250e+01  -0.976
-## model_days                  -8.545e-05  2.701e-05  4.317e+01  -3.163
-## sexM                        -2.534e-02  2.397e-02  4.091e+01  -1.057
-## age                         -2.865e-03  1.456e-03  4.093e+01  -1.967
-## RandomArmPlacebo:model_days  1.297e-04  4.197e-05  4.351e+01   3.089
-##                             Pr(>|t|)    
-## (Intercept)                  < 2e-16 ***
-## RandomArmPlacebo             0.33460    
-## model_days                   0.00286 ** 
-## sexM                         0.29669    
-## age                          0.05600 .  
-## RandomArmPlacebo:model_days  0.00349 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.173                            
-## model_days  -0.023  0.108                     
-## sexM        -0.187  0.023 -0.010              
-## age         -0.977  0.046 -0.002  0.068       
-## RndmArmPl:_  0.001 -0.136 -0.644  0.013  0.015
 ```
 
 
@@ -1036,7 +643,7 @@ df %>%
      facet_wrap(~ThickChange)
 ```
 
-![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-6-1.pdf)<!-- --> 
+![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-5-1.pdf)<!-- --> 
 
 
 ```r
@@ -1192,7 +799,7 @@ df %>%
   facet_grid(RandomArm ~ ThickChange)
 ```
 
-![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-11-1.pdf)<!-- --> 
+![](06_STOPPD_CorticalThickness_byhemi_files/figure-latex/unnamed-chunk-10-1.pdf)<!-- --> 
 
 ## Exporatory ROI Analysis..
 

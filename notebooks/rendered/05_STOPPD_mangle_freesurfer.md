@@ -12,10 +12,10 @@ library(tidyverse)
 ```
 
 ```
-## √ ggplot2 3.1.0     √ purrr   0.2.4
-## √ tibble  1.4.1     √ dplyr   0.7.7
-## √ tidyr   0.7.2     √ stringr 1.2.0
-## √ readr   1.1.1     √ forcats 0.2.0
+## v ggplot2 3.1.0     v purrr   0.2.5
+## v tibble  1.4.2     v dplyr   0.7.8
+## v tidyr   0.8.2     v stringr 1.3.1
+## v readr   1.1.1     v forcats 0.2.0
 ```
 
 ```
@@ -65,7 +65,7 @@ df <- df %>%
          MR_exclusion == "No") %>%
   mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
          dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
-         STUDYID = parse_character(STUDYID)) %>%
+         STUDYID = as.character(STUDYID)) %>%
   rename(category = "second_timepoint") %>%
   select(STUDYID, randomization, sex, age, category, offLabel, dateDiff)
 ```

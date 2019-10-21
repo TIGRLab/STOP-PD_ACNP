@@ -1,11 +1,10 @@
 # Whole Skeleton Fractional Anisotropy 
 
-```{r set_up, message=FALSE, warning=FALSE}
+```{r set_up}
 #load libraries
 library(tidyverse)
-library(lme4)
+library(broom)
 library(lmerTest)
-library(growthmodels)
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -21,6 +20,7 @@ colnames(df)[colnames(df)=="second_timepoint"] <- "category"
 #make a datediff column for time between scans
 df$dateDiff <- as.numeric(round(difftime(df$second_date, df$first_date, units = "days"), 0))
 
+RandomArmColors = c("#e6ab02", "#386cb0")
 ```
 ## Known exclusion reasons
 
@@ -59,8 +59,13 @@ FA <- FA_PMC %>%
 FA <- FA %>% 
   filter(!(timepoint %in% c("00", "03"))) %>%
   gather(tract, FA, ends_with("FA")) %>%
+  spread(timepoint, FA) %>%
+  mutate(change = `02` - `01`) %>%
+  gather(timepoint, FA, `01`, `02`, change) %>%
   unite(tract_timepoint, tract, timepoint) %>%
   spread(tract_timepoint, FA)
+
+rm(FA_most, FA_PMC)
 ```
 
 
@@ -79,6 +84,9 @@ df %>%
 ```{r}
 all_FA <- df %>%
   select(STUDYID, sex, age, randomization, category, dateDiff) %>%
+  mutate(RandomArm = factor(randomization, 
+                       levels = c("O", "P"),
+                       labels = c("Olanzapine", "Placebo"))) %>%
   left_join(FA, by = "STUDYID")
 
 all_FA %>%
@@ -123,70 +131,166 @@ RCT_FA <- all_FA %>%
 
 ```
 
+
+## Running Table One to get baseline values
+
+```{r}
+library(tableone)
+CreateTableOne(data = all_FA,
+               strata = c("RandomArm"),
+               vars = c("category", "AverageFA_FA_01"))
+```
+
+#### baseline collapsed value
+
+```{r}
+CreateTableOne(data = all_FA,
+               vars = c("category", "AverageFA_FA_01"))
+```
+
+#### baseline t.test
+
+```{r}
+all_FA %>%
+  select(RandomArm, AverageFA_FA_01) %>%
+  gather(brain, mm, -RandomArm) %>%
+  group_by(brain) %>%
+  do(tidy(t.test(mm~RandomArm, data = .))) %>%
+  select(brain, statistic, parameter, p.value, method) %>%
+  rename(t = statistic, df = parameter) %>%
+  knitr::kable(caption = "t.test for baseline group differences", digits = 2)
+```
+
+Note that there are very strong scanner effects so it is probably better to consider these by site..
+
+```{r}
+
+CreateTableOne(data = all_FA,
+               strata = c("RandomArm","site"),
+               vars = c("category", "AverageFA_FA_01"))
+```
+
 ## RCT only
 
-```{r RCT_FA_meanSkel_plot, warning = FALSE}
+```{r RCT_FA_meanSkel_plot_fig3A, warning = FALSE, fig.width=4, fig.height=4}
 #boxplot of difference in FA in whole skeleton (y axis) by randomization group (x axis)
-ggplot(RCT_FA, aes(x= randomization, y = diffAverageSkel_FA)) + 
-   geom_boxplot(outlier.shape = NA) + 
+ggplot(RCT_FA, aes(x= RandomArm, y = diffAverageSkel_FA, fill = RandomArm)) + 
+   geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
    geom_dotplot(binaxis = 'y', stackdir = 'center') +
    geom_hline(yintercept = 0) +
-   ggtitle("Whole skeleton fractional anisotropy") +
-   xlab("randomization condition") +  
-   ylab("difference between timepoints") +
-   theme_minimal()
-
+   labs(x = NULL, y = "Change in Fractional Anisotropy",
+        fill = "Group") +
+   scale_fill_manual(values = RandomArmColors) +
+   scale_shape_manual(values = c(21)) +
+   theme_bw() +
+   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
 ```
 
 
 ```{r RCT_FA_meanSkel_stats, warning = FALSE}
-fit_rct <- lm(diffAverageSkel_FA ~ randomization, data= RCT_FA)
-print(fit_rct)
-summary(fit_rct)
-
-#run linear model with covariates of sex and age
-fit_rct <- lm(diffAverageSkel_FA ~ randomization + sex + age, data= RCT_FA)
-print(fit_rct)
-summary(fit_rct)
-
 #run linear model with covariates of sex, age and site
-fit_rct <- lm(diffAverageSkel_FA ~ randomization + sex + age + site, data= RCT_FA)
-print(fit_rct)
+fit_rct <- lmer(diffAverageSkel_FA ~ RandomArm + sex + age + (1|site), data= RCT_FA)
 summary(fit_rct)
 ```
+## adding the non-RCT people to the plot
+
+```{r}
+all_FA %>%
+  mutate(Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  ggplot(aes(x= RandomArm, y = diffAverageSkel_FA, fill = Outcome)) + 
+     geom_boxplot(outlier.shape = NA) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', 
+                  position=position_dodge(0.8)) +
+     geom_hline(yintercept = 0) +
+     xlab(NULL) +
+     ylab("change in FA between scans") +
+     theme_bw() +
+     scale_fill_manual(values = c('white','grey')) 
+```
+
+```{r}
+all_FA %>%
+  mutate(Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  filter(category != "Off protocol") %>%
+  group_by(RandomArm, category) %>%
+  do(tidy(t.test(.$diffAverageSkel_FA, mu = 0, alternative = "two.sided"))) %>%
+  knitr::kable(digits = 3)
+```
+
 
 ## RCT & Relapse (with time as factor)
 
 
+```{r RCTRelapse_FA_plot_fig3C, fig.width=4.75, fig.height=4}
+RCTRelapse_wholeskelFA <- RCTRelapse_FA %>%
+  filter(Tract == "AverageFA") %>%
+  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol"),
+                           labels = c("Sustained remission", "Relapse", "Discontinuation")))
+#plot
+RCTRelapse_wholeskelFA %>%
+  ggplot(aes(x=model_days, y=FA, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
+  labs(x ="Days between MRIs", 
+       y = "Fractional Anistotropy",
+       shape = "Status at scan 2",
+       color = "Group") +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+```
+
 ```{r RCTRelapse_FA_plot, warning = FALSE}
 RCTRelapse_wholeskelFA <- RCTRelapse_FA %>%
   filter(Tract == "AverageFA")
-#plot
-RCTRelapse_wholeskelFA %>%
-  ggplot(aes(x=model_days, y=FA, colour=randomization)) + 
-  geom_point() + 
-  geom_line(aes(group=STUDYID), alpha = 0.5) + 
-  geom_smooth(method="lm", formula=y~poly(x,1)) +
-  ggtitle("Whole skeleton fractional anisotropy over time") +    
-  xlab("days between MRIs") +  
-  ylab("Mean Diffusivity") +
-  theme_minimal()
-```
-
-```{r RCTRelapse_FA_stats, warning = FALSE}
-#run mixed linear model, with covariates
-fit_all <- lmer(FA ~ randomization*model_days + sex + age + (1|STUDYID), data= RCTRelapse_wholeskelFA)
-summary(fit_all)
 
 ```
-## just wanna through in one site model..
 
-```{r RCTRelapse_FA_statswsite, warning = FALSE}
+
+
+```{r RCTRelapse_FA_statswsite1}
 #run mixed linear model, with covariates
-fit_all <- lmer(FA ~ randomization*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_wholeskelFA)
+fit_all <- lmer(FA ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelFA)
 summary(fit_all)
 ```
 
+```{r RCTRelapse_FA_statswsite1_sense}
+#run mixed linear model, with covariates
+RCTRelapse_wholeskelFA_sense <- RCTRelapse_wholeskelFA %>% filter(category != "Off protocol")
+
+fit_all <- lmer(FA ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelFA_sense)
+summary(fit_all)
+```
+
+
+## running exploratory Tractwise analysis
+
+No significant effects found
+
+```{r}
+RCT_Tractwise <- RCT_FA %>%
+  gather(elabel, change_FA, ends_with('_FA_change')) %>%
+  filter(!str_detect(elabel, '-L'), 
+         !str_detect(elabel, '-R'),
+         !str_detect(elabel, 'Average')) %>%
+  group_by(elabel) %>%
+  do(tidy(lm(change_FA ~ RandomArm + sex + age + site, data= .))) %>%
+  ungroup() %>% group_by(term) %>%
+  mutate(p_FDR = p.adjust(p.value, method = 'fdr'))
+
+RCT_Tractwise %>%
+  filter(p_FDR < 0.1) %>%
+  arrange(p.value) %>%
+  knitr::kable()
+
+```
 
 ```{r FA-cleanup}
 #cleanup

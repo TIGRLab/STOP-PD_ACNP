@@ -113,7 +113,7 @@ FS <- read_csv('../data/fs-enigma-long_201811/LandRvolumes.csv') #bring in subco
 ```
 
 ```r
-RandomArmColors = c("#e6ab02", "#386cb0")
+RandomArmColors = c( "#FFC200", "#007aa3")
 ```
 
 
@@ -128,7 +128,7 @@ df <- df %>%
          MR_exclusion == "No") %>%
   mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
          dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
-         STUDYID = as.character(STUDYID),
+         STUDYID = parse_character(STUDYID),
          age = parse_number(age),
          category = factor(second_timepoint, levels = c("RCT","Relapse", "Off protocol"))) %>%
   select(STUDYID, randomization, sex, age, category, offLabel, dateDiff)
@@ -358,14 +358,13 @@ ggplot(aes(x= RandomArm, y = volume_change, fill = RandomArm)) +
      geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
      geom_dotplot(binaxis = 'y', stackdir = 'center') +
      geom_hline(yintercept = 0) +
-     labs( x=NULL,      
-           y = bquote('Change in Volume (mm'^3*')'),
-           fill = "Group") +
+     ggtitle("Freesurfer Subcortical Volume Changes") +
+     xlab(NULL) +
+     ylab("Change in Volume") +
      scale_fill_manual(values = RandomArmColors) +
      scale_shape_manual(values = c(21)) +
      facet_wrap(~Region) +
-     theme_bw() +
-     theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_blank())
+     theme_bw()
 ```
 
 ```
@@ -709,12 +708,11 @@ RCTRelapse_Thalamus_sense <- RCTRelapse_Thalamus %>% filter(category != "Off pro
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
   geom_smooth(aes(color = RandomArm), method="lm") +
-  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = "Group") +
+  labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
   scale_colour_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
   theme_bw()  +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   facet_wrap(~roi)
 ```
 
@@ -866,12 +864,11 @@ RCTRelapse_Striatum_sense <- RCTRelapse_Striatum %>% filter(category != "Off pro
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
   geom_smooth(aes(color = RandomArm), method="lm") +
-  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = "Group") +
+  labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
   scale_colour_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
   theme_bw()  +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   facet_wrap(~roi)
 ```
 
@@ -1072,12 +1069,11 @@ RCTRelapse_Hippocampus_sense <- RCTRelapse_Hippocampus %>% filter(category != "O
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
   geom_smooth(aes(color = RandomArm), method="lm") +
-  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = NULL) +
+  labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
   scale_colour_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
   theme_bw()  +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
   facet_wrap(~roi)
 ```
 

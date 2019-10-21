@@ -4,11 +4,13 @@
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(broom)
 
 df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-11-05.csv",na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
 
 FS <- read_csv('../data/fs-enigma-long_201811/LandRvolumes.csv') #bring in subcortical data, from pipelines
 
+RandomArmColors = c("#e6ab02", "#386cb0")
 ```
 
 ```{r datacleaning_participants}
@@ -23,9 +25,9 @@ df <- df %>%
          MR_exclusion == "No") %>%
   mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
          dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
-         STUDYID = parse_character(STUDYID),
-         age = parse_number(age)) %>%
-  rename(category = "second_timepoint") %>%
+         STUDYID = as.character(STUDYID),
+         age = parse_number(age),
+         category = factor(second_timepoint, levels = c("RCT","Relapse", "Off protocol"))) %>%
   select(STUDYID, randomization, sex, age, category, offLabel, dateDiff)
 
 ```
@@ -54,8 +56,9 @@ FS_long_plus <- FS_long %>%
 FS_wide <- FS_long_plus %>%
   gather(region, volume, -study, -site, -timepoint, -STUDYID, -longitudinal_pipe) %>%
   spread(timepoint, volume) %>%
-  mutate(change = `02` - `01`) %>%
-  gather(timepoint, volume, `01`, `02`, change) %>%
+  mutate(change = `02` - `01`,
+         percchange = (`02`-`01`)/`01`) %>%
+  gather(timepoint, volume, `01`, `02`, change, percchange) %>%
   unite(newcolnames, region, timepoint) %>%
   spread(newcolnames, volume)
 ```
@@ -95,6 +98,27 @@ ana_df %>%
   knitr::kable()
 ```
 
+```{r}
+library(tableone)
+
+print(CreateTableOne(data = ana_df,
+               strata = c("RandomArm"),
+               vars = c("category", "Hippocampus_01", "Striatum_01", 'Thalamus_01')))
+```
+```{r}
+print(CreateTableOne(data = ana_df,
+               vars = c("category", "Hippocampus_01", "Striatum_01", 'Thalamus_01')))
+
+ana_df %>%
+  select(RandomArm, Hippocampus_01, Striatum_01, Thalamus_01) %>%
+  gather(brain, mm, -RandomArm) %>%
+  group_by(brain) %>%
+  do(tidy(t.test(mm~RandomArm, data = .))) %>%
+  select(brain, statistic, parameter, p.value, method) %>%
+  rename(t = statistic, df = parameter) %>%
+  knitr::kable(caption = "t.test for baseline group differences", digits = 2)
+```
+
 ## creating an control error term calculating data frame
 
 ```{r 10-datacleaning_controls}
@@ -125,7 +149,7 @@ rm(FS_long1, repeat_ids)
 ```{r}
 # make sure that STUDYID is an character not a number
 # make sure that dateDiff is a number, not an interger
-# label the randomization variable  
+# label the RandomArm variable  
 RCT_SubCort <- ana_df %>%
 
   filter(category == "RCT")
@@ -133,72 +157,90 @@ RCT_SubCort <- ana_df %>%
 ```
 
 
-```{r 10-boxplot-ROIs}
-#boxplot of difference in thickness (y axis) by randomization group (x axis)
+```{r 10-boxplot-ROIs_supplfig, fig.height=4, fig.width=7}
+#boxplot of difference in thickness (y axis) by RandomArm group (x axis)
 RCT_SubCort  %>%
   gather(region, volume_change, Thalamus_change, Hippocampus_change, Striatum_change) %>%
   mutate(Region = str_replace(region, '_change','')) %>%
-ggplot(aes(x= RandomArm, y = volume_change)) + 
-     geom_boxplot(outlier.shape = NA) + 
+ggplot(aes(x= RandomArm, y = volume_change, fill = RandomArm)) + 
+     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
      geom_dotplot(binaxis = 'y', stackdir = 'center') +
      geom_hline(yintercept = 0) +
-     ggtitle("Freesurfer Subcortical Volume Changes") +
+     labs( x=NULL,      
+           y = bquote('Change in Volume (mm'^3*')'),
+           fill = "Group") +
+     scale_fill_manual(values = RandomArmColors) +
+     scale_shape_manual(values = c(21)) +
+     facet_wrap(~Region) +
+     theme_bw() +
+     theme(panel.grid.minor.x = element_blank(), panel.grid.major.x = element_blank())
+
+```
+
+```{r 10-boxplot-ROIs-pchange}
+#boxplot of difference in thickness (y axis) by RandomArm group (x axis)
+RCT_SubCort  %>%
+  gather(region, volume_percchange, Thalamus_percchange, Hippocampus_percchange, Striatum_percchange) %>%
+  mutate(Region = str_replace(region, '_percchange','')) %>%
+ggplot(aes(x= RandomArm, y = volume_percchange, fill = RandomArm)) + 
+     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center') +
+     geom_hline(yintercept = 0) +
+     ggtitle("Freesurfer Subcortical Percent Volume Changes") +
      xlab(NULL) +
-     ylab("Change in Volume") +
+     ylab("Percent Change in Volume") +
+     scale_fill_brewer(palette = "Dark2", direction = -1) +
+     scale_shape_manual(values = c(21)) +
      facet_wrap(~Region) +
      theme_bw()
+
 ```
+
 ### Running RCT Linear Models
 
 #### Thalamus
 
 ```{r RCT_Thalamus_stats}
-#run linear model without covariates
-  fit_rct <- lm(Thalamus_change ~ RandomArm, data= RCT_SubCort)
-  summary(fit_rct)
-
 #run linear model with covariates of sex and age
-  fit_rct <- lm(Thalamus_change ~ RandomArm + sex + age, data= RCT_SubCort)
-  summary(fit_rct)
-  
-#run linear model with covariates of sex and age
-  fit_rct <- lm(Thalamus_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  fit_rct <- lmer(Thalamus_change ~ RandomArm + sex + age + (1|site), data= RCT_SubCort)
   summary(fit_rct)
 ```
+```{r RCT_ThalamusPerc_stats}
+#run linear model with covariates of sex and age and site intercept
+  fit_rct <- lmer(Thalamus_percchange ~ RandomArm + sex + age + (1|site), data= RCT_SubCort)
+  summary(fit_rct)
+```
+
 #### Striatum
 
 ```{r RCT_Striatum_stats}
-#run linear model without covariates
-  fit_rct <- lm(Striatum_change ~ RandomArm, data= RCT_SubCort)
-  print(fit_rct)
-  summary(fit_rct)
-
 #run linear model with covariates of sex and age
-  fit_rct <- lm(Striatum_change ~ RandomArm + sex + age, data= RCT_SubCort)
-  print(fit_rct)
-  summary(fit_rct)
-  
-#run linear model with covariates of sex and age
-  fit_rct <- lm(Striatum_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
-  print(fit_rct)
+  fit_rct <- lmer(Striatum_change ~ RandomArm + sex + age + (1|site), data= RCT_SubCort)
   summary(fit_rct)
 ```
+```{r RCT_StriatumPerc_stats}
+#run linear model with covariates of sex and age
+  fit_rct <- lmer(Striatum_percchange ~ RandomArm + sex + age + (1|site), data= RCT_SubCort)
+  summary(fit_rct)
+```
+
 #### Hippocampus
 
 ```{r RCT_Hippocampus_stats}
-#run linear model without covariates
-  fit_rct <- lm(Hippocampus_change ~ RandomArm, data= RCT_SubCort)
-  summary(fit_rct)
-
 #run linear model with covariates of sex and age
-  fit_rct <- lm(Hippocampus_change ~ RandomArm + sex + age, data= RCT_SubCort)
-  summary(fit_rct)
-  
-#run linear model with covariates of sex and age
-  fit_rct <- lm(Hippocampus_change ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  fit_rct <- lmer(Hippocampus_change ~ RandomArm + sex + age + (1|site), data= RCT_SubCort)
   summary(fit_rct)
 ```
 
+```{r RCT_HippocampusPerc_stats}
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Hippocampus_percchange ~ RandomArm + sex + age, data= RCT_SubCort)
+  summary(fit_rct)
+  
+#run linear model with covariates of sex and age
+  fit_rct <- lm(Hippocampus_percchange ~ RandomArm + sex + age + site, data= RCT_SubCort)
+  summary(fit_rct)
+```
 ----
 
 ## RCT & Relapse (with time as factor)
@@ -212,34 +254,38 @@ ggplot(aes(x= RandomArm, y = volume_change)) +
     gather(oldcolname, volume, Thalamus_01, Thalamus_02) %>%
     mutate(model_days = if_else(oldcolname == "Thalamus_01", 1, dateDiff))
 
-RCTRelapse_Thalamus %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+RCTRelapse_Thalamus %>% filter(model_days == 1) %>% count(RandomArm) %>% knitr::kable() 
 
+RCTRelapse_Thalamus_sense <- RCTRelapse_Thalamus %>% filter(category != "Off protocol")
 ```
 
-```{r RCTRelapse_Thalamus_plot, warning = FALSE}
+```{r RCTRelapse_Thalamus_plot_suppF, warning = FALSE, fig.height=4, fig.width = 4.3}
 
-#plot all data, including outlier (participant 210030)
-  RCTRelapse_Thalamus %>%
-   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
-   geom_point() + 
-   geom_line(aes(group=STUDYID), alpha = 0.5) + 
-   geom_smooth(method="lm", formula=y~poly(x,1)) +
-   ggtitle("Volume of Thalamus over time") +
-   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
-   theme_minimal()
+ RCTRelapse_Thalamus %>%
+  mutate(roi = "Thalamus") %>%
+  ggplot(aes(x=model_days, y=volume, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm") +
+  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = "Group") +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw()  +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  facet_wrap(~roi)
 ```
 
 ```{r RCTRelapse_Thalamus_stats, warning = FALSE}  
 #run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Thalamus)
-  print(fit_all)
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_Thalamus)
   summary(fit_all)
+```
 
+```{r}
 #run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Thalamus)
-  print(fit_all)
-  summary(fit_all)
-
+  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_Thalamus_sense)
+  summary(fit_all)  
 ```
 
 ### Striatum
@@ -249,36 +295,42 @@ RCTRelapse_Thalamus %>% filter(model_days == 1) %>% count(randomization) %>% kni
 #restructure data for RCT & Relapse participants (N=72)
   RCTRelapse_Striatum <- ana_df %>%
     gather(oldcolname, volume, Striatum_01, Striatum_02) %>%
-    mutate(model_days = if_else(oldcolname == "Striatum_01", 1, dateDiff))
+    mutate(model_days = if_else(oldcolname == "Striatum_01", 1, dateDiff)) %>%
+  mutate(age_centered = age - mean(age),
+         model_days_centered = model_days - mean(model_days))
 
-RCTRelapse_Striatum %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+RCTRelapse_Striatum %>% filter(model_days == 1) %>% count(RandomArm) %>% knitr::kable() 
 
+RCTRelapse_Striatum_sense <- RCTRelapse_Striatum %>% filter(category != "Off protocol")
 ```
 
-```{r RCTRelapse_Striatum_plot, warning = FALSE}
+```{r RCTRelapse_Striatum_plot_supplE, warning = FALSE, fig.height=4, fig.width = 4.3}
 
-#plot all data, including outlier (participant 210030)
-  RCTRelapse_Striatum %>%
-   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
-   geom_point() + 
-   geom_line(aes(group=STUDYID), alpha = 0.5) + 
-   geom_smooth(method="lm", formula=y~poly(x,1)) +
-   ggtitle("Volume of Striatum over time") +
-   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
-   theme_minimal()
+ RCTRelapse_Striatum %>%
+  mutate(roi = "Striatum") %>%
+  ggplot(aes(x=model_days, y=volume, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm") +
+  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = "Group") +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw()  +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  facet_wrap(~roi)
 ```
 
 ```{r RCTRelapse_Striatum_stats, warning = FALSE}  
-#run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Striatum)
+  fit_all <- lmer(volume ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_Striatum)
   print(fit_all)
   summary(fit_all)
+```
 
-#run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Striatum)
+```{r}
+    fit_all <- lmer(volume ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_Striatum_sense)
   print(fit_all)
   summary(fit_all)
-
 ```
 
 ### Hippocampus
@@ -288,34 +340,50 @@ RCTRelapse_Striatum %>% filter(model_days == 1) %>% count(randomization) %>% kni
 #restructure data for RCT & Relapse participants (N=72)
   RCTRelapse_Hippocampus <- ana_df %>%
     gather(oldcolname, volume, Hippocampus_01, Hippocampus_02) %>%
-    mutate(model_days = if_else(oldcolname == "Hippocampus_01", 1, dateDiff))
+    mutate(model_days = if_else(oldcolname == "Hippocampus_01", 1, dateDiff)) %>%
+  mutate(age_centered = age - mean(age),
+         model_days_centered = model_days - mean(model_days))
 
-RCTRelapse_Hippocampus %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+RCTRelapse_Hippocampus %>% filter(model_days == 1) %>% count(RandomArm) %>% knitr::kable() 
 
+RCTRelapse_Hippocampus_sense <- RCTRelapse_Hippocampus %>% filter(category != "Off protocol")
 ```
 
-```{r RCTRelapse_Hippocampus_plot, warning = FALSE}
+```{r RCTRelapse_Hippocampus_plot_supplD, warning = FALSE, fig.height=4, fig.width = 4.3}
 
 #plot all data, including outlier (participant 210030)
-  RCTRelapse_Hippocampus %>%
-   ggplot(aes(x=model_days, y=volume, colour=RandomArm)) + 
-   geom_point() + 
-   geom_line(aes(group=STUDYID), alpha = 0.5) + 
-   geom_smooth(method="lm", formula=y~poly(x,1)) +
-   ggtitle("Volume of Hippocampus over time") +
-   labs(x = "Days between MRIs", y = "Volume", colour = NULL) +
-   theme_minimal()
+ RCTRelapse_Hippocampus %>%
+  mutate(roi = "Hippocampus") %>%
+  ggplot(aes(x=model_days, y=volume, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm") +
+  labs(x = "Days between MRIs", y = bquote('Volume (mm'^3*')'), colour = NULL) +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw()  +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  facet_wrap(~roi)
 ```
 
 ```{r RCTRelapse_Hippocampus_stats, warning = FALSE}  
+
 #run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_Hippocampus)
+  fit_all <- lmer(volume ~ RandomArm*model_days_centered + sex + age_centered + (1|site) + (1|STUDYID), data= RCTRelapse_Hippocampus)
   print(fit_all)
   summary(fit_all)
 
 #run mixed linear model, with covariates
-  fit_all <- lmer(volume ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_Hippocampus)
+  fit_all <- lmer(volume ~ RandomArm*model_days_centered*age_centered + sex + (1|site) + (1|STUDYID), data= RCTRelapse_Hippocampus)
   print(fit_all)
-  summary(fit_all)
-
+  summary(fit_all)  
+  
 ```
+```{r}
+#run mixed linear model, with covariates
+  fit_all <- lmer(volume ~ RandomArm*model_days_centered + sex + age_centered + (1|site) + (1|STUDYID), data= RCTRelapse_Hippocampus_sense)
+  print(fit_all)
+  summary(fit_all)
+```
+

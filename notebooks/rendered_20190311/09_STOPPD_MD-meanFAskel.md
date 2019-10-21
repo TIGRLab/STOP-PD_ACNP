@@ -7,6 +7,7 @@
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(growthmodels)
 library(broom)
 ```
 
@@ -24,7 +25,7 @@ colnames(df)[colnames(df)=="second_timepoint"] <- "category"
 #make a datediff column for time between scans
 df$dateDiff <- as.numeric(round(difftime(df$second_date, df$first_date, units = "days"), 0))
 
-RandomArmColors = c("#e6ab02", "#386cb0")
+RandomArmColors = c( "#FFC200", "#007aa3")
 ```
 ## Known exclusion reasons
 
@@ -280,12 +281,11 @@ ggplot(RCT_MD, aes(x= RandomArm, y = diffAverageSkel_MD, fill = RandomArm)) +
    geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
    geom_dotplot(binaxis = 'y', stackdir = 'center') +
    geom_hline(yintercept = 0) +
-  labs(x = NULL, y = "Change in Mean Diffusivity",
-        fill = "Group") +
+   xlab(NULL) +  
+   ylab("Change in Mean Diffusivity") +
    scale_fill_manual(values = RandomArmColors) +
    scale_shape_manual(values = c(21)) +
-   theme_bw() +
-   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+   theme_bw()
 ```
 
 ```
@@ -341,50 +341,6 @@ summary(fit_rct)
 ## age         -0.921 -0.181 -0.201
 ```
 
-```r
-fit_rct <- lmer(diffAverageSkel_MD ~ RandomArm + sex + age + (1|site), data= filter(RCT_MD, age > 50))
-summary(fit_rct)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: diffAverageSkel_MD ~ RandomArm + sex + age + (1 | site)
-##    Data: filter(RCT_MD, age > 50)
-## 
-## REML criterion at convergence: -307.5
-## 
-## Scaled residuals: 
-##    Min     1Q Median     3Q    Max 
-## -2.100 -0.750  0.201  0.728  1.082 
-## 
-## Random effects:
-##  Groups   Name        Variance       Std.Dev.  
-##  site     (Intercept) 0.000000000000 0.00000000
-##  Residual             0.000000001037 0.00003221
-## Number of obs: 22, groups:  site, 4
-## 
-## Fixed effects:
-##                       Estimate    Std. Error            df t value
-## (Intercept)       0.0000692085  0.0000579832 17.9999999997   1.194
-## RandomArmPlacebo -0.0000474697  0.0000144412 17.9999999997  -3.287
-## sexM             -0.0000235345  0.0000139829 17.9999999998  -1.683
-## age              -0.0000003901  0.0000008475 17.9999999997  -0.460
-##                  Pr(>|t|)   
-## (Intercept)        0.2481   
-## RandomArmPlacebo   0.0041 **
-## sexM               0.1096   
-## age                0.6508   
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP sexM  
-## RndmArmPlcb -0.360              
-## sexM        -0.184  0.188       
-## age         -0.977  0.238  0.045
-```
-
 
 ## RCT & Relapse (with time as factor)
 
@@ -393,46 +349,22 @@ summary(fit_rct)
 ```r
 RCTRelapse_wholeskelMD <- RCTRelapse_MD %>%
   filter(Tract == "AverageFA") %>%
-  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol"),
-                           labels = c("Sustained remission", "Relapse", "Discontinuation")))
+  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol")))
 #plot
 RCTRelapse_wholeskelMD %>%
   ggplot(aes(x=model_days, y=MD, fill = RandomArm)) + 
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
-  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
-  labs(x ="Days between MRIs", 
-       y = "Mean Diffusivity",
-       shape = "Status at scan 2",
-       color = "Group") +
+  geom_smooth(aes(color = RandomArm), method="lm", formula=y~poly(x,1)) +
+  xlab("Days between MRIs") +  
+  ylab("Mean Diffusivity") +
   scale_colour_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+  theme_bw()
 ```
 
 ![](09_STOPPD_MD-meanFAskel_files/figure-latex/RCTRelapse_MD_plot_fig3D-1.pdf)<!-- --> 
-
-```r
-#plot
-RCTRelapse_wholeskelMD %>%
-  ggplot(aes(x=model_days, y=MD, fill = RandomArm)) + 
-  geom_point(aes(shape = category)) + 
-  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
-  geom_smooth(aes(color = RandomArm), method="lm", formula = 'y ~ poly(x,2)', fill = "grey40") +
-  labs(x ="Days between MRIs", 
-       y = "Mean Diffusivity",
-       shape = "Status at scan 2",
-       color = "Group") +
-  scale_colour_manual(values = RandomArmColors) +
-  scale_fill_manual(values = RandomArmColors) +
-  scale_shape_manual(values = c(21:23)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
-```
-
-![](09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-11-1.pdf)<!-- --> 
 
 
 
@@ -489,125 +421,6 @@ summary(fit_all)
 ## RndmArmPl:_  0.023 -0.139 -0.594  0.001 -0.002
 ```
 
-```r
-fit_all <- lmer(MD ~ RandomArm*poly(model_days,2) + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelMD)
-summary(fit_all)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: MD ~ RandomArm * poly(model_days, 2) + sex + age + (1 | site) +  
-##     (1 | STUDYID)
-##    Data: RCTRelapse_wholeskelMD
-## 
-## REML criterion at convergence: -2243.2
-## 
-## Scaled residuals: 
-##     Min      1Q  Median      3Q     Max 
-## -1.7710 -0.4231 -0.0214  0.4348  1.9231 
-## 
-## Random effects:
-##  Groups   Name        Variance       Std.Dev.  
-##  STUDYID  (Intercept) 0.000000007740 0.00008798
-##  site     (Intercept) 0.000000008817 0.00009390
-##  Residual             0.000000000416 0.00002040
-## Number of obs: 142, groups:  STUDYID, 71; site, 4
-## 
-## Fixed effects:
-##                                            Estimate    Std. Error
-## (Intercept)                            0.0009405890  0.0000628286
-## RandomArmPlacebo                      -0.0000459239  0.0000216290
-## poly(model_days, 2)1                   0.0001180378  0.0000285567
-## poly(model_days, 2)2                   0.0000383370  0.0000377433
-## sexM                                   0.0000583251  0.0000216053
-## age                                    0.0000076669  0.0000006992
-## RandomArmPlacebo:poly(model_days, 2)1 -0.0001551340  0.0000491709
-## RandomArmPlacebo:poly(model_days, 2)2 -0.0001134923  0.0000541825
-##                                                  df t value
-## (Intercept)                            8.6184324574  14.971
-## RandomArmPlacebo                      64.3958445145  -2.123
-## poly(model_days, 2)1                  67.7596115332   4.133
-## poly(model_days, 2)2                  69.7879402183   1.016
-## sexM                                  64.1643833310   2.700
-## age                                   64.4096266882  10.965
-## RandomArmPlacebo:poly(model_days, 2)1 68.7043960730  -3.155
-## RandomArmPlacebo:poly(model_days, 2)2 69.5758137895  -2.095
-##                                                   Pr(>|t|)    
-## (Intercept)                           0.000000181921518238 ***
-## RandomArmPlacebo                                  0.037581 *  
-## poly(model_days, 2)1                              0.000101 ***
-## poly(model_days, 2)2                              0.313267    
-## sexM                                              0.008866 ** 
-## age                                   0.000000000000000227 ***
-## RandomArmPlacebo:poly(model_days, 2)1             0.002382 ** 
-## RandomArmPlacebo:poly(model_days, 2)2             0.039847 *  
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP p(_,2)1 p(_,2)2 sexM   age    RAP:(_,2)1
-## RndmArmPlcb -0.137                                                
-## ply(md_,2)1 -0.017  0.020                                         
-## ply(md_,2)2 -0.035  0.015  0.201                                  
-## sexM        -0.128  0.072  0.002  -0.002                          
-## age         -0.590 -0.077  0.015   0.047  -0.086                  
-## RnAP:(_,2)1  0.010  0.014 -0.581  -0.117   0.001 -0.009           
-## RnAP:(_,2)2  0.029  0.007 -0.140  -0.697   0.001 -0.037  0.269
-```
-
-```r
-fit_all <- lmer(MD ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= filter(RCTRelapse_wholeskelMD, age > 50))
-summary(fit_all)
-```
-
-```
-## Linear mixed model fit by REML. t-tests use Satterthwaite's method [
-## lmerModLmerTest]
-## Formula: 
-## MD ~ RandomArm * model_days + sex + age + (1 | site) + (1 | STUDYID)
-##    Data: filter(RCTRelapse_wholeskelMD, age > 50)
-## 
-## REML criterion at convergence: -1355.6
-## 
-## Scaled residuals: 
-##      Min       1Q   Median       3Q      Max 
-## -1.98980 -0.50569  0.01791  0.50070  1.91314 
-## 
-## Random effects:
-##  Groups   Name        Variance        Std.Dev.  
-##  STUDYID  (Intercept) 0.0000000047872 0.00006919
-##  site     (Intercept) 0.0000000133212 0.00011542
-##  Residual             0.0000000004261 0.00002064
-## Number of obs: 88, groups:  STUDYID, 44; site, 4
-## 
-## Fixed effects:
-##                                   Estimate     Std. Error             df
-## (Intercept)                  0.00051966649  0.00011685447 26.46026744371
-## RandomArmPlacebo            -0.00001051201  0.00002230098 39.63324516520
-## model_days                   0.00000011233  0.00000003064 42.34768958830
-## sexM                         0.00009305201  0.00002171790 37.13842602584
-## age                          0.00001336655  0.00000145523 37.95315248190
-## RandomArmPlacebo:model_days -0.00000015901  0.00000004742 42.91867854184
-##                             t value        Pr(>|t|)    
-## (Intercept)                   4.447        0.000140 ***
-## RandomArmPlacebo             -0.471        0.639961    
-## model_days                    3.666        0.000682 ***
-## sexM                          4.285        0.000124 ***
-## age                           9.185 0.0000000000347 ***
-## RandomArmPlacebo:model_days  -3.353        0.001677 ** 
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Correlation of Fixed Effects:
-##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.227                            
-## model_days  -0.032  0.138                     
-## sexM        -0.207  0.062 -0.008              
-## age         -0.852  0.144  0.008  0.125       
-## RndmArmPl:_  0.010 -0.172 -0.646  0.013  0.008
-```
-
 
 ```r
 RCTRelapse_wholeskelMD_sense <- RCTRelapse_wholeskelMD %>% filter(category != "Off protocol")
@@ -623,44 +436,44 @@ summary(fit_all)
 ## MD ~ RandomArm * model_days + sex + age + (1 | site) + (1 | STUDYID)
 ##    Data: RCTRelapse_wholeskelMD_sense
 ## 
-## REML criterion at convergence: -2246.8
+## REML criterion at convergence: -2074.6
 ## 
 ## Scaled residuals: 
 ##      Min       1Q   Median       3Q      Max 
-## -1.75931 -0.44531 -0.00936  0.39581  1.91032 
+## -1.75438 -0.43253 -0.00483  0.39766  1.90966 
 ## 
 ## Random effects:
-##  Groups   Name        Variance        Std.Dev.  
-##  STUDYID  (Intercept) 0.0000000077174 0.00008785
-##  site     (Intercept) 0.0000000087245 0.00009340
-##  Residual             0.0000000004336 0.00002082
-## Number of obs: 142, groups:  STUDYID, 71; site, 4
+##  Groups   Name        Variance       Std.Dev.  
+##  STUDYID  (Intercept) 0.000000007944 0.00008913
+##  site     (Intercept) 0.000000008402 0.00009166
+##  Residual             0.000000000447 0.00002114
+## Number of obs: 132, groups:  STUDYID, 66; site, 4
 ## 
 ## Fixed effects:
 ##                                   Estimate     Std. Error             df
-## (Intercept)                  0.00093603329  0.00006263043  8.68938506644
-## RandomArmPlacebo            -0.00003682637  0.00002181291 66.85102591970
-## model_days                   0.00000008623  0.00000002197 69.34886239368
-## sexM                         0.00005832529  0.00002158631 64.19751680155
-## age                          0.00000762514  0.00000069783 64.16140897910
-## RandomArmPlacebo:model_days -0.00000009581  0.00000003699 69.94946322992
-##                             t value             Pr(>|t|)    
-## (Intercept)                  14.945 0.000000169265448769 ***
-## RandomArmPlacebo             -1.688             0.096017 .  
-## model_days                    3.925             0.000202 ***
-## sexM                          2.702             0.008808 ** 
-## age                          10.927 0.000000000000000276 ***
-## RandomArmPlacebo:model_days  -2.590             0.011664 *  
+## (Intercept)                  0.00093650663  0.00006296200  9.36164315607
+## RandomArmPlacebo            -0.00003402152  0.00002283248 61.70059785288
+## model_days                   0.00000009109  0.00000002314 64.26215950200
+## sexM                         0.00006069042  0.00002282329 59.19528186801
+## age                          0.00000756727  0.00000073617 59.14985441694
+## RandomArmPlacebo:model_days -0.00000010128  0.00000003807 64.80607378513
+##                             t value            Pr(>|t|)    
+## (Intercept)                  14.874 0.00000007918918823 ***
+## RandomArmPlacebo             -1.490            0.141306    
+## model_days                    3.936            0.000206 ***
+## sexM                          2.659            0.010062 *  
+## age                          10.279 0.00000000000000881 ***
+## RandomArmPlacebo:model_days  -2.661            0.009824 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) RndmAP mdl_dy sexM   age   
-## RndmArmPlcb -0.140                            
-## model_days  -0.041  0.106                     
-## sexM        -0.129  0.071  0.003              
-## age         -0.590 -0.076  0.006 -0.086       
-## RndmArmPl:_  0.023 -0.139 -0.594  0.001 -0.002
+## RndmArmPlcb -0.147                            
+## model_days  -0.045  0.108                     
+## sexM        -0.092  0.029  0.000              
+## age         -0.608 -0.072  0.008 -0.134       
+## RndmArmPl:_  0.027 -0.142 -0.608  0.005 -0.006
 ```
 
 ## adding the non-RCT people to the boxplot
@@ -686,7 +499,7 @@ all_MD %>%
 ## `stat_bindot()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
-![](09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-12-1.pdf)<!-- --> 
+![](09_STOPPD_MD-meanFAskel_files/figure-latex/unnamed-chunk-11-1.pdf)<!-- --> 
 
 ### post-hoc look at subgroups against 0 change null
 

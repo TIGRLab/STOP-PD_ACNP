@@ -2,17 +2,59 @@
 
 This script pulls together completion information alongside cortical thickness (CT) values and demographic information, for statistical purposes (error calculations). It is required for subsequent CT analyses. It was made in preparation for, and discussed at, the meeting with Jason Lerch. 
 
-```{r setup}
+
+```r
 library(tidyverse)
-
-df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-11-05.csv",na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
-
-CT <- read_csv('../data/fs-enigma-long_201811/CorticalMeasuresENIGMA_ThickAvg.csv') #bring in CT data, from pipelines
-
 ```
 
-```{r datacleaning_participants}
+```
+## -- Attaching packages --------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+```
 
+```
+## v ggplot2 3.1.0     v purrr   0.2.5
+## v tibble  1.4.2     v dplyr   0.7.8
+## v tidyr   0.8.2     v stringr 1.3.1
+## v readr   1.1.1     v forcats 0.2.0
+```
+
+```
+## -- Conflicts ------------------------------------------------------------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+```
+
+```r
+df <- read_csv("../generated_csvs/STOPPD_masterDF_2018-11-05.csv",na = "empty") #spreadsheet created by 03_STOPPD_masterDF.rmd
+```
+
+```
+## Parsed with column specification:
+## cols(
+##   .default = col_character(),
+##   STUDYID = col_integer()
+## )
+```
+
+```
+## See spec(...) for full column specifications.
+```
+
+```r
+CT <- read_csv('../data/fs-enigma-long_201811/CorticalMeasuresENIGMA_ThickAvg.csv') #bring in CT data, from pipelines
+```
+
+```
+## Parsed with column specification:
+## cols(
+##   .default = col_double(),
+##   SubjID = col_character()
+## )
+## See spec(...) for full column specifications.
+```
+
+
+```r
 # remove participants that did not complete first and second scan (n=74)
 # then add offlabel and dateDiff (in days columns)
 # + a scan is by definition offlabel if it is the third scan
@@ -23,16 +65,16 @@ df <- df %>%
          MR_exclusion == "No") %>%
   mutate(offLabel  = if_else(third_complete == "Yes", "Yes", ''),
          dateDiff = round(difftime(second_date, first_date, units = "days"), 0),
-         STUDYID = as.character(STUDYID)) %>%
+         STUDYID = parse_character(STUDYID)) %>%
   rename(category = "second_timepoint") %>%
   select(STUDYID, randomization, sex, age, category, offLabel, dateDiff)
-
 ```
 
 ## cleaning the CT data
 
 
-```{r datacleaning_CT}
+
+```r
 # separating the subject id and anything afterwards to identify the longtudinal pipeline participants
 # separating the subject id into site, "STUDYID" and timepoint columns
 # filtering (two steps) to only include the longitudinal pipeline data
@@ -54,7 +96,8 @@ CT_wide <- CT_long %>%
 ```
 
 
-```{r merge_with_clinical_and_check}
+
+```r
 # merge CT values with df
 ana_df <- inner_join(df, CT_wide, by='STUDYID')
 
@@ -64,29 +107,59 @@ write_csv(ana_df, '../generated_csvs/STOPPD_participantsCT_20181111.csv')
 
 ## report any mising values from clinical trial sample
 
-```{r}
+
+```r
 anti_join(df, CT_wide, by='STUDYID') %>%
   summarise(`Number of participants missing` = n()) %>%
   knitr::kable()
 ```
-```{r}
+
+
+\begin{tabular}{r}
+\hline
+Number of participants missing\\
+\hline
+0\\
+\hline
+\end{tabular}
+
+```r
 ana_df %>%
   filter(is.na(LThickness_01)) %>%
   summarise(`Number of participants missing timepoint 01` = n()) %>%
   knitr::kable()
 ```
 
-```{r}
+
+\begin{tabular}{r}
+\hline
+Number of participants missing timepoint 01\\
+\hline
+0\\
+\hline
+\end{tabular}
+
+
+```r
 ana_df %>%
   filter(is.na(LThickness_02)) %>%
   summarise(`Number of participants missing timepoint 02` = n()) %>%
   knitr::kable()
 ```
 
+
+\begin{tabular}{r}
+\hline
+Number of participants missing timepoint 02\\
+\hline
+0\\
+\hline
+\end{tabular}
+
 ## creating an control error term calculating spreadsheet
 
-```{r datacleaning_controls}
 
+```r
 ## identify the repeat control in a column and mangle the STUDYID to match in a new column
 CT_long1 <- CT_long %>%
   mutate(repeat_run = if_else(str_sub(STUDYID,1,1)=="R", "02", "01"),

@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # Cortical Thickness Analysis
 
 This section runs the stats for average (by hemisphere) Cortical Thickness calculated with Freesurfer
@@ -6,9 +11,9 @@ This section runs the stats for average (by hemisphere) Cortical Thickness calcu
 
 #load libraries
 library(tidyverse)
-library(lme4)
+library(broom)
 library(lmerTest)
-library(growthmodels)
+library(tableone)
 
 
 #bring in data 
@@ -30,6 +35,12 @@ df$RandomArm <- factor(df$randomization,
                        levels = c("O", "P"),
                        labels = c("Olanzapine", "Placebo"))
 
+RandomArmColors = c("#e6ab02", "#386cb0")
+
+# set category levels so that RCT and Relapse are at the top
+df <- df %>%
+  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol")))
+
 #restructure data for RCT completers' only (N=40)
   RCT_CT <- df %>%
     filter(category == "RCT") 
@@ -42,86 +53,116 @@ df$RandomArm <- factor(df$randomization,
 ```
 
 
+
+#### baseline measures (table1 part 1)
+
+```{r}
+CreateTableOne(data = df,
+               strata = "randomization",
+               vars = c("category", "LThickness_01", "RThickness_01", "LSurfArea_01", "RSurfArea_01"))
+```
+
+```{r}
+CreateTableOne(data = df,
+               vars = c("category", "LThickness_01", "RThickness_01", "LSurfArea_01", "RSurfArea_01"))
+```
+
+#### baseline stats (part 2)
+
+```{r}
+
+df %>%
+  select(randomization, LThickness_01, RThickness_01, LSurfArea_01, RSurfArea_01) %>%
+  gather(thick, mm, -randomization) %>%
+  group_by(thick) %>%
+  do(tidy(t.test(mm~randomization, data = .))) %>%
+  knitr::kable(caption = "t.test for baseline group differences")
+
+```
+
 ## RCT only
-
-
 
 ```{r RCT_LCT_boxplot}
 RCT_CT %>% count(randomization) %>% knitr::kable() 
 
-#boxplot of difference in thickness (y axis) by randomization group (x axis)
-ggplot(RCT_CT, aes(x= RandomArm, y = LThickness_change)) + 
-     geom_boxplot(outlier.shape = NA) + 
-     geom_dotplot(binaxis = 'y', stackdir = 'center') +
-     geom_hline(yintercept = 0) +
-     ggtitle("Cortical thickness (left hemisphere)") +
-     xlab(NULL) +
-     ylab("Change in Cortical Thickness (mm)") +
-     theme_minimal()
 ```
 
+
 ```{r RCT_LCT_stats}
-#run linear model without covariates
-  fit_rct <- lm(LThickness_change ~ RandomArm, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
 
-#run linear model with covariates of sex and age
-  fit_rct <- lm(LThickness_change ~ RandomArm + sex + age, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
+fit_all <- lmer(LThickness_change ~ RandomArm + sex + age + (1|site), data= RCT_CT)
+summary(fit_all) 
 
+fit_all <- lmer(LThickness_change ~ RandomArm + sex + age + (1|site), data= filter(RCT_CT, age > 50))
+summary(fit_all) 
   
-#run linear model with covariates of sex and age
-  fit_rct <- lm(LThickness_change ~ RandomArm + sex + age + site, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
+```
+```{r RCT_RCT_stats}
+
+fit_all <- lmer(RThickness_change ~ RandomArm + sex + age + (1|site), data= RCT_CT)
+summary(fit_all)  
+
+fit_all <- lmer(RThickness_change ~ RandomArm + sex + age + (1|site), data= filter(RCT_CT, age > 50))
+summary(fit_all)  
 ```
 
 ### looking at the same thing for Right CT
 
-```{r RCT_RCT_boxplot}
-#boxplot of difference in thickness (y axis) by randomization group (x axis)
-ggplot(RCT_CT, aes(x= RandomArm, y = RThickness_change)) + 
-     geom_boxplot(outlier.shape = NA) + 
-     geom_dotplot(binaxis = 'y', stackdir = 'center') +
-     geom_hline(yintercept = 0) +
-     ggtitle("Cortical thickness (right hemisphere)") +
-     xlab(NULL) +
-     ylab("Change in Cortical Thickness (mm)") +
-     theme_minimal()
-```
-```{r RCT_CT_facet_boxplot}
-#boxplot of difference in thickness (y axis) by randomization group (x axis)
+
+```{r RCT_CT_facet_boxplot_fig2A, fig.height=3.5, fig.width = 5}
+#boxplot of difference in thickness (y axis) by randoMR_exclusion == "No"mization group (x axis)
 RCT_CT %>%
   gather(TCT, mm, LThickness_change, RThickness_change) %>%
   mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
                               labels = c("Left Hemisphere", "Right Hemisphere"))) %>%
-ggplot(aes(x= RandomArm, y = mm)) + 
-     geom_boxplot(outlier.shape = NA) + 
-     geom_dotplot(binaxis = 'y', stackdir = 'center') +
+ggplot(aes(x= RandomArm, y = mm, fill = RandomArm)) + 
+     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', binwidth = 0.005) +
      geom_hline(yintercept = 0) +
-     labs(title = "Change in Cortical Thickness",x = NULL, y = "Change in Cortical Thickness (mm)") +
+     labs(x = NULL, y = "Change in Cortical Thickness (mm)") +
+     scale_fill_manual(values = RandomArmColors) +
+     scale_shape_manual(values = c(21)) +
      facet_wrap(~ ThickChange) +
-     theme_bw()
-```
-```{r RCT_RCT_stats}
-#run linear model without covariates
-  fit_rct <- lm(RThickness_change ~ RandomArm, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
+     theme_bw() +
+     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
 
-#run linear model with covariates of sex and age
-  fit_rct <- lm(RThickness_change ~ RandomArm + sex + age, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
-
-  
-#run linear model with covariates of sex and age
-  fit_rct <- lm(RThickness_change ~ RandomArm + sex + age + site, data= RCT_CT)
-  print(fit_rct)
-  summary(fit_rct)
 ```
+
+```{r RCT_CT_facet_boxplot_fig2Aa, fig.height=3.5, fig.width = 5}
+#boxplot of difference in thickness (y axis) by randoMR_exclusion == "No"mization group (x axis)
+RCT_CT %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere"))) %>%
+ggplot(aes(x= RandomArm, y = mm, fill = RandomArm)) + 
+     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', binwidth = 0.005) +
+     geom_hline(yintercept = 0) +
+     labs(x = NULL, y = "Change in Cortical Thickness (mm)") +
+     scale_fill_manual(values = RandomArmColors) +
+     scale_shape_manual(values = c(21)) +
+     facet_wrap(~ ThickChange) +
+     theme_bw() +
+     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
+```
+```{r}
+RCT_CT %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere"))) %>%
+ggplot(aes(x= RandomArm, y = mm, fill = factor(age > 50))) + 
+     geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', binwidth = 0.005) +
+     geom_hline(yintercept = 0) +
+     labs(x = NULL, y = "Change in Cortical Thickness (mm)") +
+     scale_fill_manual(values = RandomArmColors) +
+     scale_shape_manual(values = c(21)) +
+     facet_wrap(~ ThickChange) +
+     theme_bw() +
+     theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
+
+```
+
 
 ## RCT & Relapse (with time as factor)
 
@@ -129,37 +170,61 @@ ggplot(aes(x= RandomArm, y = mm)) +
 #restructure data for RCT & Relapse participants (N=72)
   RCTRelapse_LCT <- df %>%
     gather(thick_oldcolname, thickness, LThickness_01, LThickness_02) %>%
-    mutate(model_days = if_else(thick_oldcolname == "LThickness_01", 1, dateDiff))
+    mutate(model_days = if_else(thick_oldcolname == "LThickness_01", 1, dateDiff)) %>%
+    mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol")),
+           hemi = "Left Hemisphere")
 
-RCTRelapse_LCT %>% filter(model_days == 1) %>% count(randomization) %>% knitr::kable() 
+RCTRelapse_LCT %>% filter(model_days == 1) %>% count(RandomArm, offLabel) %>% knitr::kable() 
 
+RCTRelapse_LCT_sensitivety <- RCTRelapse_LCT %>% 
+  filter(category != "Off protocol" )  
+
+RCTRelapse_LCT_sensitivety %>% filter(model_days == 1) %>% count(RandomArm, offLabel) %>% knitr::kable() 
 ```
 
-```{r RCTRelapse_LCT_plot, warning = FALSE}
 
-#plot all data, including outlier (participant 210030)
-  RCTRelapse_LCT %>%
-   ggplot(aes(x=model_days, y=thickness, colour=RandomArm)) + 
-   geom_point() + 
-   geom_line(aes(group=STUDYID), alpha = 0.5) + 
-   geom_smooth(method="lm", formula=y~poly(x,1)) +
-   ggtitle("Cortical thickness in left hemisphere over time") +
-   labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
-   theme_minimal()
+```{r RCTRelapse_LCT_plot_fig2CL, warning = FALSE, fig.height=4, fig.width = 4}
+RCTRelapse_LCT %>%
+  ggplot(aes(x=model_days, y=thickness, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
+  labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
+  scale_color_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  scale_y_continuous(limits = c(2.1,2.65)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  facet_wrap(~hemi)
 ```
 
-```{r RCTRelapse_LCT_stats, warning = FALSE}  
-#run mixed linear model, with covariates
-  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_LCT)
-  summary(fit_all)
 
-```
+
 
 ```{r RCTRelapse_LCT_statswsite, warning = FALSE}  
 #run mixed linear model, with covariates
-  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_LCT)
+  fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_LCT)
+  summary(fit_all)
+  
+  fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= filter(RCTRelapse_LCT, age > 50))
   summary(fit_all)
 
+```
+
+
+
+```{r RCTRelapse_LCT_statswsite_sense, warning = FALSE}  
+
+#run mixed linear model, with covariates
+  fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_LCT_sensitivety)
+  summary(fit_all)
+  
+  fit_all <- lmer(thickness ~ RandomArm*poly(model_days,2) + age + sex + (1|site) + (1|STUDYID), data= RCTRelapse_LCT_sensitivety)
+  summary(fit_all)
+
+    fit_all <- lmer(thickness ~ RandomArm*model_days + age + sex + (1|site) + (1|STUDYID), data= filter(RCTRelapse_LCT_sensitivety, age > 50))
+  summary(fit_all)
 ```
 
 ### Running the right hemisphere RCTRelapse
@@ -169,28 +234,224 @@ RCTRelapse_LCT %>% filter(model_days == 1) %>% count(randomization) %>% knitr::k
 #restructure data for RCT & Relapse participants (N=72)
   RCTRelapse_RCT <- df %>%
     gather(thick_oldcolname, thickness, RThickness_01, RThickness_02) %>%
-    mutate(model_days = if_else(thick_oldcolname == "RThickness_01", 1, dateDiff))
+    mutate(model_days = if_else(thick_oldcolname == "RThickness_01", 1, dateDiff)) %>%
+    mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol")),
+           hemi = "Right Hemisphere")
 
-#plot all data, including outlier (participant 210030)
-  RCTRelapse_RCT %>%
-   ggplot(aes(x=model_days, y=thickness, colour=RandomArm)) + 
-   geom_point() + 
-   geom_line(aes(group=STUDYID), alpha = 0.5) + 
-   geom_smooth(method="lm", formula=y~poly(x,1)) +
-   ggtitle("Cortical thickness in right hemisphere over time") +
-   labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
-   theme_minimal()
+RCTRelapse_RCT_sensitivety <- RCTRelapse_RCT %>% 
+  filter(category != "Off protocol" )  
+
 ```
 
-```{r RCTRelapse_RCT_stats, warning = FALSE}  
+```{r RCTRelapse_RCT_plot_fig2CR, warning = FALSE, fig.height=4, fig.width = 3.75}
+RCTRelapse_RCT %>%
+  ggplot(aes(x=model_days, y=thickness, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
+  labs(x = "Days between MRIs", y = "", colour = NULL) +
+  scale_color_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  scale_y_continuous(limits = c(2.1,2.65), breaks = NULL) +
+  theme_bw()  +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) +
+  facet_wrap(~hemi)
+```
+```{r RCTRelapse_RCT_statswsite2, warning = FALSE}  
 #run mixed linear model, with covariates
-  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|STUDYID), data= RCTRelapse_RCT)
-  summary(fit_all)
+  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_RCT)
+  summary(fit_all) 
+  
+  fit_all <- lmer(thickness ~ RandomArm*poly(model_days,2) + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_RCT)
+  summary(fit_all)  
+
+    fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= filter(RCTRelapse_RCT, age > 50))
+  summary(fit_all) 
 
 ```
-```{r RCTRelapse_RCT_statswsite, warning = FALSE}  
+
+
+```{r RCTRelapse_RCT_statswsite2_sense, warning = FALSE}  
 #run mixed linear model, with covariates
-  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_RCT)
-  summary(fit_all)
+  fit_all <- lmer(thickness ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_RCT_sensitivety)
+  summary(fit_all)  
+
 
 ```
+
+### Playing with other ways to layout the plots
+
+
+```{r RCTRelapse_LCT_plot_2part1, warning = FALSE}
+RCTRelapse_LCT %>%
+  ggplot(aes(x=model_days, y=thickness, colour = category)) +
+  geom_point() +
+  geom_line(aes(group=STUDYID), alpha = 0.5) +
+  ggtitle("Cortical thickness in left hemisphere over time") +
+  labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
+  theme_minimal() + facet_wrap(~ RandomArm) +
+  scale_colour_discrete(direction = -1)
+```
+
+```{r RCTRelapse_RCT_plot_2part2, warning = FALSE}
+RCTRelapse_LCT %>%
+  mutate(Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  ggplot(aes(x=model_days, y=thickness, fill = category)) +
+  geom_point() +
+  geom_line(aes(group=STUDYID), alpha = 0.5) +
+  ggtitle("Cortical thickness in left hemisphere over time") +
+  labs(x = "Days between MRIs", y = "Cortical Thickness (mm)", colour = NULL) +
+  theme_bw() + facet_wrap(~ RandomArm) +
+  scale_colour_manual(values = c("black", "white", "grey"))
+```
+
+## Post-Hoc - looking at subgroups
+
+plotting change for all participants
+
+
+```{r}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  ggplot(aes(x= RandomArm, y = mm, fill = Outcome)) + 
+     geom_boxplot(outlier.shape = NA) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', 
+                  position=position_dodge(0.8), binwidth = 0.005) +
+     geom_hline(yintercept = 0) +
+     xlab(NULL) +
+     ylab("Change in Cortical Thickness (mm)") +
+     theme_bw() +
+     scale_fill_manual(values = c('white','grey')) +
+     facet_wrap(~ThickChange)
+```
+
+```{r}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  filter(category != "Off protocol") %>%
+  group_by(ThickChange, RandomArm, category) %>%
+  do(tidy(t.test(.$mm, mu = 0, alternative = "two.sided"))) %>%
+  knitr::kable(digits = 3)
+```
+## Exploratory within Treatment Arm tests
+
+```{r}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  filter(category != "Off protocol") %>%
+  group_by(ThickChange, RandomArm) %>%
+  do(tidy(t.test(mm~category, var.equal = FALSE, data = .))) %>%
+  knitr::kable(digits = 3)
+```
+```{r}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  filter(category != "Off protocol") %>%
+  group_by(ThickChange, RandomArm) %>%
+  do(tidy(lm(mm~category + age + sex + site, var.equal = FALSE, data = .))) %>%
+  filter(term == "categoryRelapse") %>%
+  knitr::kable(digits = 3)
+```
+```{r}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         MRdays = as.numeric(dateDiff)) %>%
+  filter(category != "Off protocol") %>%
+  group_by(ThickChange, RandomArm) %>%
+  do(tidy(lm(mm~MRdays, data = .))) %>%
+  filter(term == "MRdays") %>%
+  knitr::kable(digits = 3)
+```
+```{r fig.height=6, fig.width=6}
+df %>%
+  gather(TCT, mm, LThickness_change, RThickness_change) %>%
+  mutate(ThickChange = factor(TCT, levels = c("LThickness_change", "RThickness_change"),
+                              labels = c("Left Hemisphere", "Right Hemisphere")),
+         MRdays = as.numeric(dateDiff)) %>%
+  filter(category != "Off protocol") %>%
+  ggplot(aes(x = MRdays, y = mm)) +
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_grid(RandomArm ~ ThickChange)
+```
+
+## Exporatory ROI Analysis..
+
+Running the RCT analysis ROI-wise with FDR correction. 
+
+```{r }
+library(ggseg)
+library(magrittr)
+library(dplyr)
+library(broom)
+```
+
+
+
+
+```{r }
+RCT_ROIwise <- RCT_CT %>%
+  gather(elabel, change_mm, ends_with('_thickavg_change')) %>%
+  group_by(elabel) %>%
+  do(tidy(lm(change_mm ~ RandomArm + sex + age + site, data= .))) %>%
+  ungroup() %>% group_by(term) %>%
+  mutate(p_FDR = p.adjust(p.value, method = 'fdr'))
+
+RCT_ROIwise_supptable = RCT_ROIwise %>%
+  filter(p_FDR < 0.06) %>%
+  arrange(p.value) %>%
+  mutate(ROI = str_replace(elabel, '_thickavg_change', '')) %>%
+  ungroup() %>%
+  select(ROI, estimate, std.error, statistic, p_FDR)
+
+RCT_ROIwise_supptable %>% write_csv('../generated_csvs/supptable4_thickbyROI.csv')
+
+RCT_ROIwise_supptable %>%
+  knitr::kable(digits = 3)
+```
+```{r roiwise_cort_thickness_plot_supplfig}
+library(viridis)
+RCT_ROIwise %>%
+  ungroup() %>%
+  filter(term == "RandomArmPlacebo") %>%
+  mutate(label = str_replace(elabel, '_thickavg_change', '') %>%
+           str_replace('L','lh') %>%
+           str_replace('R','rh'),
+         is_sig = if_else(p_FDR < 0.055, "sig", NA_character_)) %>%
+  inner_join(atlas.info$data[2][[1]], by = "label") %>%
+  ggseg(atlas="dkt", mapping=aes(fill=statistic, color = is_sig)) +
+  scale_fill_viridis() +
+  scale_color_manual(values = c("black", NULL)) + 
+  labs(color = NULL, fill = "t-statistic")
+  
+```
+
+### Figure Caption (brain plots) 
+
+Mapping the effect of olanzapine vs placebo on cortical thinning over 36 weeks in participant who remained clinically stable. The color scale represents the t-statistic for the effect of treatment (Placebo vs Olanzapine) where brighter colors represents greater cortical thinning. Areas outlined in black are those where the treatment effects was significant after correction for multiple comparisons (across 68 brain regions) using False Discovery Rate. 
+

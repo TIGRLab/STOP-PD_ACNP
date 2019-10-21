@@ -7,7 +7,7 @@
 library(tidyverse)
 library(lme4)
 library(lmerTest)
-library(growthmodels)
+library(broom)
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -23,6 +23,7 @@ colnames(df)[colnames(df)=="second_timepoint"] <- "category"
 #make a datediff column for time between scans
 df$dateDiff <- as.numeric(round(difftime(df$second_date, df$first_date, units = "days"), 0))
 
+RandomArmColors = c("#e6ab02", "#386cb0")
 ```
 ## Known exclusion reasons
 
@@ -58,9 +59,12 @@ MD <- MD_PMC %>%
   bind_rows(MD_most)
 
 # drop acute ("00") and other ("03") timepoints from the analysis
-MD <- MD %>% 
+MD <- MD %>%  
   filter(!(timepoint %in% c("00", "03"))) %>%
   gather(tract, MD, ends_with("MD")) %>%
+  spread(timepoint, MD) %>%
+  mutate(change = `02` - `01`) %>%
+  gather(timepoint, MD, `01`, `02`, change) %>%
   unite(tract_timepoint, tract, timepoint) %>%
   spread(tract_timepoint, MD)
 ```
@@ -81,6 +85,9 @@ df %>%
 ```{r}
 all_MD <- df %>%
   select(STUDYID, sex, age, randomization, category, dateDiff) %>%
+  mutate(RandomArm = factor(randomization, 
+                       levels = c("O", "P"),
+                       labels = c("Olanzapine", "Placebo"))) %>%
   left_join(MD, by = "STUDYID")
 
 all_MD %>%
@@ -125,68 +132,186 @@ RCT_MD <- all_MD %>%
 
 ```
 
+## Running Table One to get baseline values
+
+```{r}
+library(tableone)
+print(CreateTableOne(data = all_MD,
+               strata = c("RandomArm"),
+               vars = c("category", "AverageFA_MD_01")), contDigits = 5)
+```
+
+```{r}
+print(CreateTableOne(data = all_MD,
+               vars = c("category", "AverageFA_MD_01")), contDigits = 5)
+```
+
+#### baseline t.test
+
+```{r}
+all_MD %>%
+  select(RandomArm, AverageFA_MD_01) %>%
+  gather(brain, mm, -RandomArm) %>%
+  group_by(brain) %>%
+  do(tidy(t.test(mm~RandomArm, data = .))) %>%
+  select(brain, statistic, parameter, p.value, method) %>%
+  rename(t = statistic, df = parameter) %>%
+  knitr::kable(caption = "t.test for baseline group differences", digits = 2)
+```
+
+Note that there are very strong scanner effects so it is probably better to consider these by site..
+
+```{r}
+
+print(CreateTableOne(data = all_MD,
+               strata = c("RandomArm","site"),
+               vars = c("category", "AverageFA_MD_01")), contDigits = 5)
+```
+
+
 ## RCT only
 
-```{r RCT_MD_meanSkel_plot, warning = FALSE}
+```{r RCT_MD_meanSkel_plot_fig3B, warning = FALSE, fig.width=4, fig.height=4}
 #boxplot of difference in MD in whole skeleton (y axis) by randomization group (x axis)
-ggplot(RCT_MD, aes(x= randomization, y = diffAverageSkel_MD)) + 
-   geom_boxplot(outlier.shape = NA) + 
+ggplot(RCT_MD, aes(x= RandomArm, y = diffAverageSkel_MD, fill = RandomArm)) + 
+   geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
    geom_dotplot(binaxis = 'y', stackdir = 'center') +
    geom_hline(yintercept = 0) +
-   ggtitle("Whole skeleton mean diffusivity") +
-   xlab("randomization condition") +  
-   ylab("difference between timepoints") +
-   theme_minimal()
+  labs(x = NULL, y = "Change in Mean Diffusivity",
+        fill = "Group") +
+   scale_fill_manual(values = RandomArmColors) +
+   scale_shape_manual(values = c(21)) +
+   theme_bw() +
+   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
 
 ```
 
 
 ```{r RCT_MD_meanSkel_stats, warning = FALSE}
-fit_rct <- lm(diffAverageSkel_MD ~ randomization, data= RCT_MD)
-print(fit_rct)
-summary(fit_rct)
-
-#run linear model with covariates of sex and age
-fit_rct <- lm(diffAverageSkel_MD ~ randomization + sex + age, data= RCT_MD)
-print(fit_rct)
-summary(fit_rct)
-
 #run linear model with covariates of sex, age and site
-fit_rct <- lm(diffAverageSkel_MD ~ randomization + sex + age + site, data= RCT_MD)
-print(fit_rct)
+fit_rct <- lmer(diffAverageSkel_MD ~ RandomArm + sex + age + (1|site), data= RCT_MD)
+summary(fit_rct)
+
+fit_rct <- lmer(diffAverageSkel_MD ~ RandomArm + sex + age + (1|site), data= filter(RCT_MD, age > 50))
 summary(fit_rct)
 ```
+
 
 ## RCT & Relapse (with time as factor)
 
 
-```{r RCTRelapse_MD_plot, warning = FALSE}
+```{r RCTRelapse_MD_plot_fig3D, fig.width=4.8, fig.height=4}
 RCTRelapse_wholeskelMD <- RCTRelapse_MD %>%
-  filter(Tract == "AverageFA")
+  filter(Tract == "AverageFA") %>%
+  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol"),
+                           labels = c("Sustained remission", "Relapse", "Discontinuation")))
 #plot
 RCTRelapse_wholeskelMD %>%
-  ggplot(aes(x=model_days, y=MD, colour=randomization)) + 
-  geom_point() + 
-  geom_line(aes(group=STUDYID), alpha = 0.5) + 
-  geom_smooth(method="lm", formula=y~poly(x,1)) +
-  ggtitle("Whole skeleton mean diffusivity over time") +    
-  xlab("days between MRIs") +  
-  ylab("Mean Diffusivity") +
-  theme_minimal()
+  ggplot(aes(x=model_days, y=MD, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
+  labs(x ="Days between MRIs", 
+       y = "Mean Diffusivity",
+       shape = "Status at scan 2",
+       color = "Group") +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+```
+```{r}
+#plot
+RCTRelapse_wholeskelMD %>%
+  ggplot(aes(x=model_days, y=MD, fill = RandomArm)) + 
+  geom_point(aes(shape = category)) + 
+  geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
+  geom_smooth(aes(color = RandomArm), method="lm", formula = 'y ~ poly(x,2)', fill = "grey40") +
+  labs(x ="Days between MRIs", 
+       y = "Mean Diffusivity",
+       shape = "Status at scan 2",
+       color = "Group") +
+  scale_colour_manual(values = RandomArmColors) +
+  scale_fill_manual(values = RandomArmColors) +
+  scale_shape_manual(values = c(21:23)) +
+  theme_bw() +
+  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank()) 
 ```
 
-```{r RCTRelapse_MD_stats, warning = FALSE}
+
+```{r RCTRelapse_MD_statswsite1}
 #run mixed linear model, with covariates
-fit_all <- lmer(MD ~ randomization*model_days + sex + age + (1|STUDYID), data= RCTRelapse_wholeskelMD)
+fit_all <- lmer(MD ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelMD)
 summary(fit_all)
 
+fit_all <- lmer(MD ~ RandomArm*poly(model_days,2) + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelMD)
+summary(fit_all)
+
+fit_all <- lmer(MD ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= filter(RCTRelapse_wholeskelMD, age > 50))
+summary(fit_all)
 ```
-## just wanna through in one site model..
 
-```{r RCTRelapse_MD_statswsite, warning = FALSE}
+```{r RCTRelapse_MD_statswsite1_sense, warning = FALSE}
+RCTRelapse_wholeskelMD_sense <- RCTRelapse_wholeskelMD %>% filter(category != "Off protocol")
 #run mixed linear model, with covariates
-fit_all <- lmer(MD ~ randomization*model_days + sex + age + site + (1|STUDYID), data= RCTRelapse_wholeskelMD)
+fit_all <- lmer(MD ~ RandomArm*model_days + sex + age + (1|site) + (1|STUDYID), data= RCTRelapse_wholeskelMD_sense)
 summary(fit_all)
+```
+
+## adding the non-RCT people to the boxplot
+
+```{r}
+all_MD %>%
+  mutate(Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  ggplot(aes(x= RandomArm, y = diffAverageSkel_MD, fill = Outcome)) + 
+     geom_boxplot(outlier.shape = NA) + 
+     geom_dotplot(binaxis = 'y', stackdir = 'center', 
+                  position=position_dodge(0.8)) +
+     geom_hline(yintercept = 0) +
+     xlab(NULL) +
+     ylab("change in MD between scans") +
+     theme_bw() +
+     scale_fill_manual(values = c('white','grey')) 
+```
+
+### post-hoc look at subgroups against 0 change null
+
+```{r}
+all_MD %>%
+  mutate(Outcome = case_when(category == "Off protocol" ~ "non-completer",
+                             category == "Relapse" ~ "non-completer",
+                             category == "RCT"~ "completer")) %>%
+  filter(category != "Off protocol") %>%
+  group_by(RandomArm, category) %>%
+  do(tidy(t.test(.$diffAverageSkel_MD, mu = 0, alternative = "two.sided"))) %>%
+  knitr::kable(digits = 3)
+```
+
+## running exploratory Tractwise analysis
+
+No significant effects found
+
+```{r}
+RCT_Tractwise <- RCT_MD %>%
+  gather(elabel, change_MD, ends_with('_MD_change')) %>%
+  filter(!str_detect(elabel, '-L'), 
+         !str_detect(elabel, '-R'),
+         !str_detect(elabel, 'Average')) %>%
+  group_by(elabel) %>%
+  do(tidy(lm(change_MD ~ RandomArm + sex + age + site, data= .))) %>%
+  ungroup() %>% group_by(term) %>%
+  mutate(p_FDR = p.adjust(p.value, method = 'fdr'))
+
+RCT_Tractwise_suppltable <- RCT_Tractwise %>%
+  filter(p_FDR < 0.06) %>%
+  arrange(p.value) %>%
+  ungroup() %>% select(-term, -p.value) 
+RCT_Tractwise_suppltable %>% write_csv('../generated_csvs/suppltable4b_MDtractwise.csv')
+RCT_Tractwise_suppltable %>%
+  knitr::kable()
 ```
 
 

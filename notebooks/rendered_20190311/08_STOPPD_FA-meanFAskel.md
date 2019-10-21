@@ -82,7 +82,7 @@ colnames(df)[colnames(df)=="second_timepoint"] <- "category"
 #make a datediff column for time between scans
 df$dateDiff <- as.numeric(round(difftime(df$second_date, df$first_date, units = "days"), 0))
 
-RandomArmColors = c("#e6ab02", "#386cb0")
+RandomArmColors = c( "#FFC200", "#007aa3")
 ```
 ## Known exclusion reasons
 
@@ -318,12 +318,11 @@ ggplot(RCT_FA, aes(x= RandomArm, y = diffAverageSkel_FA, fill = RandomArm)) +
    geom_boxplot(outlier.shape = NA, alpha = 0.0001) + 
    geom_dotplot(binaxis = 'y', stackdir = 'center') +
    geom_hline(yintercept = 0) +
-   labs(x = NULL, y = "Change in Fractional Anisotropy",
-        fill = "Group") +
+   xlab(NULL) +  
+   ylab("Change in Fractional Anisotropy") +
    scale_fill_manual(values = RandomArmColors) +
    scale_shape_manual(values = c(21)) +
-   theme_bw() +
-   theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+   theme_bw()
 ```
 
 ```
@@ -433,23 +432,19 @@ Placebo & Relapse & 0.003 & 1.642 & 0.118 & 18 & -0.001 & 0.006 & One Sample t-t
 ```r
 RCTRelapse_wholeskelFA <- RCTRelapse_FA %>%
   filter(Tract == "AverageFA") %>%
-  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol"),
-                           labels = c("Sustained remission", "Relapse", "Discontinuation")))
+  mutate(category = factor(category, levels = c("RCT","Relapse", "Off protocol")))
 #plot
 RCTRelapse_wholeskelFA %>%
   ggplot(aes(x=model_days, y=FA, fill = RandomArm)) + 
   geom_point(aes(shape = category)) + 
   geom_line(aes(group=STUDYID, color = RandomArm), alpha = 0.5) + 
-  geom_smooth(aes(color = RandomArm), method="lm", fill = "grey40") +
-  labs(x ="Days between MRIs", 
-       y = "Fractional Anistotropy",
-       shape = "Status at scan 2",
-       color = "Group") +
+  geom_smooth(aes(color = RandomArm), method="lm", formula=y~poly(x,1)) +
+  xlab("Days between MRIs") +  
+  ylab("Fractional Anistotropy") +
   scale_colour_manual(values = RandomArmColors) +
   scale_fill_manual(values = RandomArmColors) +
   scale_shape_manual(values = c(21:23)) +
-  theme_bw() +
-  theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+  theme_bw()
 ```
 
 ![](08_STOPPD_FA-meanFAskel_files/figure-latex/RCTRelapse_FA_plot_fig3C-1.pdf)<!-- --> 
